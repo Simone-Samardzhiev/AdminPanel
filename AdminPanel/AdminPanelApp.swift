@@ -9,10 +9,19 @@ import SwiftUI
 
 @main
 struct AdminPanelApp: App {
+    @State var authenticationState = AuthenticationState()
+    
     var body: some Scene {
         WindowGroup {
-            LoginView()
-            
+            Group {
+                switch authenticationState.state {
+                case .authenticated(_):
+                    PanelView()
+                case .notAuthenticated:
+                    LoginView(authenticationState)
+                }
+            }
+            .environment(authenticationState)
         }
     }
 }

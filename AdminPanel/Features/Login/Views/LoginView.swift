@@ -8,9 +8,16 @@
 import SwiftUI
 
 
+/// Login view used to display login screen.
 struct LoginView: View {
-    @State private var viewModel = LoginViewModel()
-    @State private var isLoading = false
+    @State private var viewModel: LoginViewModel
+    
+    init(_ authenticationState: AuthenticationState) {
+        self.viewModel = LoginViewModel(
+            authenticationService: AuthenticationService(),
+            authenticationState: authenticationState
+        )
+    }
 
     var body: some View {
         VStack(spacing: 24) {
@@ -37,22 +44,23 @@ struct LoginView: View {
             }
             
             Button {
-                
+                Task {
+                    await viewModel.signIn()
+                }
             } label: {
-                Text("Sign in")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
+                if viewModel.isLoading {
+                    ProgressView()
+                } else {
+                    Text("Sign in")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                }
             }
             .buttonStyle(.glassProminent)
+            .disabled(viewModel.isLoading)
             .controlSize(.large)
         }
         .padding()
         .frame(maxWidth: 400)
-        
     }
-}
-
-
-#Preview {
-    LoginView()
 }

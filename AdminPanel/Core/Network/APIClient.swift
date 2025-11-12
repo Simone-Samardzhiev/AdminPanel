@@ -8,11 +8,18 @@
 import Foundation
 
 
-/// Struct holding configuration for the API.
+/// A tiny API client configuration holder.
+///
+/// `APIClient` exposes a base `url` used by services to construct endpoint URLs.
+/// A shared instance is provided via `APIClient.shared`.
 struct APIClient {
+    /// The base URL for all API endpoints.
     let url: URL
+    /// Shared instance pointing at the local development server.
     static let shared = Self(url: "http://127.0.0.1:8080/api/v1")
     
+    /// Creates a new client from a base URL string.
+    /// - Parameter url: The base URL string. Triggers a runtime `fatalError` if invalid.
     init(url: String) {
         guard let parsedURL = URL(string: url) else {
             fatalError("Invalid URL: \(url)")
@@ -20,3 +27,4 @@ struct APIClient {
         self.url = parsedURL
     }
 }
+

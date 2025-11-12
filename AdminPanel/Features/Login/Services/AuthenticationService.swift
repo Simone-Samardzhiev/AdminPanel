@@ -7,21 +7,31 @@
 
 import Foundation
 
-/// Service responsible for handling user authentication.
+/// Service responsible for authenticating users against the backend.
+///
+/// Conforming types perform network requests to validate credentials and return
+/// a lightweight boolean indicating success.
 protocol AuthenticationServiceProtocol {
-    /// Attempts to log in user with the given credentials.
+    /// Attempts to authenticate with the provided credentials.
     /// - Parameters:
-    ///   - username: The username of the user trying to log in.
-    ///   - password: The password of the user trying to log in.
-    /// - Returns: True if the credential are correct and false if not.
+    ///   - username: The username to authenticate.
+    ///   - password: The password to authenticate.
+    /// - Returns: `true` when the server confirms the credentials, `false` for 401.
+    /// - Throws: `HTTPError` when the request fails or an unexpected response is returned.
     func login(username: String, password: String) async throws(HTTPError) -> Bool
 }
 
+/// Default implementation of `AuthenticationServiceProtocol` backed by `URLSession`.
 final class AuthenticationService {
     
 }
 
+/// URLSession-based implementation of the authentication API.
 extension AuthenticationService: AuthenticationServiceProtocol {
+    /// Performs a Basic-auth GET request to the `/admin/login` endpoint.
+    ///
+    /// Encodes the username and password into an `Authorization` header and interprets
+    /// `200` as success, `401` as invalid credentials, and all other statuses as errors.
     func login(username: String, password: String) async throws(HTTPError) -> Bool {
         let credentials = "\(username):\(password)"
         let data = Data(credentials.utf8)

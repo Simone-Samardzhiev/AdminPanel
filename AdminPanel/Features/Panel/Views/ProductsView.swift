@@ -9,9 +9,16 @@ import SwiftUI
 
 /// Displays a scrollable list of products for a given category.
 struct ProductsView: View {
+    /// Injected view to update state of the panel.
+    @Environment(PanelViewModel.self) private var panelViewModel
+    
     /// Injected view model used to fetch and cache products.
     @Environment(ProductsViewModel.self) private var viewModel
+    
+    /// The identifier of the category to display.
     private let productCategoryId: UUID
+    
+    // Array holding all products.
     @State private var products: [Product]
     
     /// Creates the view for a specific product category.
@@ -33,9 +40,9 @@ struct ProductsView: View {
             }
             .padding(.vertical, 20)
         }
-        .background(.thinMaterial)
+        .frame(minWidth: 500)
         .task(id: productCategoryId) {
-            products = await viewModel.getProducts(productCategoryId)
+            products = await viewModel.getProducts(productCategoryId, panelViewModel: panelViewModel)
         }
     }
 }

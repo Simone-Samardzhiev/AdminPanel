@@ -18,46 +18,45 @@ final class ProductsViewModel {
     @ObservationIgnored private var productsCache: [UUID: [Product]] = [:]
     /// Service used to fetch categories and products.
     @ObservationIgnored let productService: ProductServiceProtocol
-    /// Panel view model used to toggle the global loading indicator.
-    @ObservationIgnored private let panelViewModel: PanelViewModel
     
     /// Creates a new view model with dependencies.
     /// - Parameters:
     ///   - productService: Service for API calls related to products.
-    ///   - panelViewModel: View model controlling global loading state.
-    init(_ productService: ProductServiceProtocol, _ panelViewModel: PanelViewModel) {
+    init(_ productService: ProductServiceProtocol,) {
         self.productCategories = []
         self.productService = productService
-        self.panelViewModel = panelViewModel
     }
     
     /// Loads product categories from the API and updates `productCategories`.
-    func getProductCategories() async {
+    /// - Parameter panelViewModel: View model to update loading state or occurred error.
+    func getProductCategories(_ panelViewModel: PanelViewModel) async {
         panelViewModel.isLoading = true
-        defer {
-            panelViewModel.isLoading = false
-        }
+        defer { panelViewModel.isLoading = false }
         
         do {
             self.productCategories = try await productService.getProductCategories()
         } catch {
-            
+            panelViewModel.errorMessage = error.userMessage
+#if DEBUG
+            print(error)
+#endif
         }
     }
     
     /// Returns products for a category, using cache unless `forceRefresh` is true.
     /// - Parameters:
     ///   - categoryId: The category to load products for.
+    ///   - panelViewModel: View model to update loading state or occurred error.
     ///   - forceRefresh: When true, ignores the cache and fetches from the API.
     /// - Returns: The list of products, possibly from cache, or an empty list on failure.
-    func getProducts(_ categoryId: UUID, forceRefresh: Bool = false) async -> [Product] {
-        if !forceRefresh, let cached = productsCache[categoryId] {
-            return cached
-        }
-        
+    func getProducts(_ categoryId: UUID, panelViewModel: PanelViewModel ,forceRefresh: Bool = false) async -> [Product] {
         panelViewModel.isLoading = true
         defer {
             panelViewModel.isLoading = false
+        }
+        
+        if !forceRefresh, let cached = productsCache[categoryId] {
+            return cached
         }
         
         do {
@@ -65,6 +64,12 @@ final class ProductsViewModel {
             productsCache[categoryId] = fetched
             return fetched
         } catch {
+#if DEBUG
+            print(error)
+#endif
+            
+            panelViewModel.errorMessage = error.userMessage
+            
             if let cached = productsCache[categoryId] {
                 return cached
             }

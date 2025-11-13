@@ -26,7 +26,13 @@ struct PanelView: View {
         NavigationSplitView {
             List {
                 NavigationLink("Menu") {
-                    CategoriesView(viewModel)
+                    CategoriesView(
+                        ProductService(
+                            jsonEncoder: JSONEncoder(),
+                            jsonDecoder: JSONDecoder()
+                        )
+                    )
+                    .environment(viewModel)
                 }
             }
             .navigationTitle("Admin Panel")

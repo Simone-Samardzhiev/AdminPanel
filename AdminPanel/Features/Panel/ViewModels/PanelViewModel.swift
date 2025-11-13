@@ -15,9 +15,11 @@ import Foundation
 final class PanelViewModel {
     /// Indicates whether a background operation is in progress.
     var isLoading: Bool
+    var errorMessage: String?
     
-    /// Creates a new panel view model with `isLoading` defaulting to `false`.
+    /// Creates a new panel view model with `isLoading` defaulting to `false` and `errorMessage` defaulting to `nil`
     init() {
         self.isLoading = false
+        self.errorMessage = nil
     }
 }

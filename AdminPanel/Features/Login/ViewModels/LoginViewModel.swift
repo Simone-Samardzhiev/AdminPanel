@@ -27,31 +27,27 @@ final class LoginViewModel {
     var errorMessage: String?
     
     /// Indicates whether a sign-in request is in flight.
-    var isLoading: Bool = false
+    var isLoading: Bool
     
     /// The service used to perform authentication requests.
-    @ObservationIgnored let authenticationService: AuthenticationService
-    
-    /// The shared authentication container used to reflect login success.
-    let authenticationState: AuthenticationState
+    @ObservationIgnored let authenticationService: AuthenticationServiceProtocol
     
     /// Creates a new view model with its dependencies.
     /// - Parameters:
     ///   - authenticationService: Service that performs the network login.
-    ///   - authenticationState: Shared state updated when sign-in succeeds.
-    init(authenticationService: AuthenticationService, authenticationState: AuthenticationState) {
+    init(_ authenticationService: AuthenticationServiceProtocol) {
         self.username = ""
         self.password = ""
         self.errorMessage = nil
+        self.isLoading = false
         self.authenticationService = authenticationService
-        self.authenticationState = authenticationState
     }
     
     /// Attempts to sign in with the current `username` and `password`.
     ///
     /// Updates `isLoading` while the request is active, sets `errorMessage` on failure,
     /// and updates `authenticationState` on success.
-    func signIn() async {
+    func login(_ state: AuthenticationState) async {
         errorMessage = nil
         isLoading = true
         defer {
@@ -63,7 +59,7 @@ final class LoginViewModel {
         do {
             success = try await authenticationService.login(username: username, password: password)
         } catch {
-            errorMessage = "An error occurred while signing in. Please try again later."
+            errorMessage = error.userMessage
 #if DEBUG
             print("Error: \(error)")
 #endif
@@ -71,9 +67,9 @@ final class LoginViewModel {
         }
         
         if success {
-            authenticationState.state = .authenticated(.init(username: username, password: password))
+            state.state = .authenticated(.init(username: username, password: password))
         } else {
-            errorMessage = "Wrong credentials"
+            errorMessage = "Wrong credentials!"
         }
     }
 }

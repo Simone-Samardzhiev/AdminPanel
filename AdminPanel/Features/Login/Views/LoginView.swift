@@ -18,15 +18,12 @@ import SwiftUI
 ///   global app state.
 /// Login view used to display login screen.
 struct LoginView: View {
+    @Environment(AuthenticationState.self) private var authenticationState
     @State private var viewModel: LoginViewModel
     
     /// Creates the login view and injects dependencies into its view model.
-    /// - Parameter authenticationState: The shared authentication container used by the app.
-    init(_ authenticationState: AuthenticationState) {
-        self.viewModel = LoginViewModel(
-            authenticationService: AuthenticationService(),
-            authenticationState: authenticationState
-        )
+    init(_ service: AuthenticationServiceProtocol) {
+        self.viewModel = LoginViewModel(service)
     }
     
     /// Renders the sign-in UI with fields for username and password, a sign-in button,
@@ -40,7 +37,7 @@ struct LoginView: View {
                 passwordField
             }
             
-            signInButton
+            loginButton
             
             // Error message with proper transition
             if let errorMessage = viewModel.errorMessage {
@@ -96,10 +93,10 @@ struct LoginView: View {
     }
     
     /// Button that triggers the asynchronous sign-in process.
-    private var signInButton: some View {
+    private var loginButton: some View {
         Button {
             Task {
-                await viewModel.signIn()
+                await viewModel.login(authenticationState)
             }
         } label: {
             if viewModel.isLoading {

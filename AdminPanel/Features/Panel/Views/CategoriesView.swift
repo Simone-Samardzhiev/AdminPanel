@@ -9,18 +9,15 @@ import SwiftUI
 
 /// Displays the list of product categories and navigates to the products list.
 struct CategoriesView: View {
+    /// Injected view to update state of the panel.
+    @Environment(PanelViewModel.self) private var panelViewModel
+    
     /// Backing view model responsible for loading categories and products.
     @State var viewModel: ProductsViewModel
     
     /// Creates the categories view and injects a `ProductService` and `PanelViewModel`.
-    /// - Parameter panelViewModel: The shared panel view model for loading state.
-    init(_ panelViewModel: PanelViewModel) {
-        self.viewModel = ProductsViewModel(
-            ProductService(
-                jsonEncoder: JSONEncoder(),
-                jsonDecoder: JSONDecoder()),
-            panelViewModel
-        )
+    init(_ productService: ProductServiceProtocol) {
+        self.viewModel = ProductsViewModel(productService)
     }
     
     /// Renders a list of categories and triggers loading on appearance.
@@ -29,10 +26,11 @@ struct CategoriesView: View {
             NavigationLink(category.name) {
                 ProductsView(category.id)
                     .environment(viewModel)
+                    .environment(panelViewModel)
             }
         }
         .task {
-            await viewModel.getProductCategories()
+            await viewModel.getProductCategories(panelViewModel)
         }
     }
 }

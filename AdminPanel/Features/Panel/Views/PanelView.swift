@@ -36,6 +36,13 @@ struct PanelView: View {
                 }
             }
             .navigationTitle("Admin Panel")
+            .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
+                Button(role: .close) {
+                    viewModel.errorMessage = nil
+                }
+            } message: {
+                Text(viewModel.errorMessage ?? "Error occurred!")
+            }
 
         } content: {
             Text("Select an item")

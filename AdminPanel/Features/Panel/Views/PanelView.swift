@@ -13,11 +13,14 @@ import SwiftUI
 ////detail placeholders. Shows a loading indicator in the toolbar when `isLoading` is true.
 struct PanelView: View {
     /// Backing view model that exposes shared UI-state like loading.
-    @State var viewModel: PanelViewModel
+    @State var panelViewModel: PanelViewModel
+    
+    let credentials: Credentials
     
     /// Creates the panel view with a fresh `PanelViewModel` instance.
-    init() {
-        self.viewModel = PanelViewModel()
+    init(_ credentials: Credentials) {
+        self.panelViewModel = PanelViewModel()
+        self.credentials = credentials
     }
     
     
@@ -27,21 +30,22 @@ struct PanelView: View {
             List {
                 NavigationLink("Menu") {
                     CategoriesView(
-                        ProductService(
+                        credentials: credentials,
+                        productService: ProductService(
                             jsonEncoder: JSONEncoder(),
                             jsonDecoder: JSONDecoder()
                         )
                     )
-                    .environment(viewModel)
+                    .environment(panelViewModel)
                 }
             }
             .navigationTitle("Admin Panel")
-            .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
+            .alert("Error", isPresented: .constant(panelViewModel.errorMessage != nil)) {
                 Button(role: .close) {
-                    viewModel.errorMessage = nil
+                    panelViewModel.errorMessage = nil
                 }
             } message: {
-                Text(viewModel.errorMessage ?? "Error occurred!")
+                Text(panelViewModel.errorMessage ?? "Error occurred!")
             }
 
         } content: {
@@ -51,17 +55,13 @@ struct PanelView: View {
         }
         .toolbar {
             ToolbarItem(placement: .automatic) {
-                if viewModel.isLoading {
+                if panelViewModel.isLoading {
                     ProgressView()
                         .progressViewStyle(.circular)
                         .scaleEffect(0.5)
-                        .animation(.easeInOut(duration: 0.2), value: viewModel.isLoading)
+                        .animation(.easeInOut(duration: 0.2), value: panelViewModel.isLoading)
                 }
             }
         }
     }
 }
-#Preview {
-    PanelView()
-}
-

@@ -11,19 +11,19 @@ import Foundation
 ///
 /// Decodes from JSON where `price` is represented as a string to avoid floating
 /// point issues. Conforms to `Identifiable` for SwiftUI lists.
-struct Product: Decodable, Identifiable, Hashable {
+struct Product: Decodable, Identifiable, Hashable, Equatable {
     /// Unique identifier of the product.
     let id: UUID
     /// Human-readable name of the product.
-    let name: String
+    var name: String
     /// Descriptive text for the product.
-    let description: String
+    var description: String
     /// Optional URL string pointing to the product image.
-    let imageUrl: String?
+    var imageUrl: String?
     /// Identifier of the category this product belongs to.
-    let category: UUID
+    var category: UUID
     /// Product price represented as `Decimal` for precision.
-    let price: Decimal
+    var price: Decimal
     
     private enum CodingKeys: String, CodingKey {
         case id, name, description, imageUrl, category, price

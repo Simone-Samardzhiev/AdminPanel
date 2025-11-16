@@ -1,5 +1,5 @@
 //
-//  ProductsView.swift
+//  CategoriesView.swift
 //  AdminPanel
 //
 //  Created by Simone Samardzhiev on 10.11.25.
@@ -13,24 +13,27 @@ struct CategoriesView: View {
     @Environment(PanelViewModel.self) private var panelViewModel
     
     /// Backing view model responsible for loading categories and products.
-    @State var viewModel: ProductsViewModel
+    @State var productViewModel: ProductsViewModel
     
     /// Creates the categories view and injects a `ProductService` and `PanelViewModel`.
-    init(_ productService: ProductServiceProtocol) {
-        self.viewModel = ProductsViewModel(productService)
+    init(credentials: Credentials, productService: ProductServiceProtocol) {
+        self.productViewModel = ProductsViewModel(
+            credentials: credentials,
+            productService: productService
+        )
     }
     
     /// Renders a list of categories and triggers loading on appearance.
     var body: some View {
-        List(viewModel.productCategories) { category in
+        List(productViewModel.categories) { category in
             NavigationLink(category.name) {
                 ProductsView(category.id)
-                    .environment(viewModel)
+                    .environment(productViewModel)
                     .environment(panelViewModel)
             }
         }
         .task {
-            await viewModel.getProductCategories(panelViewModel)
+            await productViewModel.loadData(panelViewModel)
         }
     }
 }

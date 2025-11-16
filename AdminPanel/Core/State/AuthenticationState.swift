@@ -17,16 +17,6 @@ import Foundation
 @Observable
 @MainActor
 final class AuthenticationState {
-    /// A lightweight value type that holds the user's credentials for the current session.
-    ///
-    /// - Important: These values are kept in memory only and are not persisted. Do not
-    ///   store sensitive information beyond the needs of the active session.
-    struct Credentials {
-        /// The username provided by the user.
-        let username: String
-        /// The password provided by the user.
-        let password: String
-    }
     /// Represents the current authentication status of the application.
     enum State: Equatable {
         /// The user is authenticated with the provided `Credentials`.

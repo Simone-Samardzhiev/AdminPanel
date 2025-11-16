@@ -37,7 +37,9 @@ extension AuthenticationService: AuthenticationServiceProtocol {
         let data = Data(credentials.utf8)
         let base64Credentials = data.base64EncodedString()
         
-        let url = APIClient.shared.url.appending(path: "/admin/login")
+        let url = APIClient.shared.url
+            .appending(path: "admin")
+            .appending(path: "login")
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
@@ -48,20 +50,20 @@ extension AuthenticationService: AuthenticationServiceProtocol {
         do {
             (_, response) = try await URLSession.shared.data(for: request)
         } catch {
-            throw HTTPError.requestFailed
+            throw HTTPError.requestFailed(error)
         }
         
-        guard let urlResponse = response as? HTTPURLResponse else {
+        guard let httpResponse = response as? HTTPURLResponse else {
             throw HTTPError.invalidResponse
         }
         
-        switch urlResponse.statusCode {
+        switch httpResponse.statusCode {
         case 200:
             return true
         case 401:
             return false
         default:
-            throw HTTPError.invalidResponse
+            throw HTTPError.invalidStatusCode(httpResponse.statusCode)
         }
     }
 

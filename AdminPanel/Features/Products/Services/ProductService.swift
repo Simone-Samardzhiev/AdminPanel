@@ -1,0 +1,194 @@
+//
+//  ProductService.swift
+//  AdminPanel
+//
+//  Created by Simone Samardzhiev on 10.11.25.
+//
+
+import Foundation
+
+/// Abstraction over product-related API operations.
+///
+/// Provides methods to load product categories and products for a category.
+protocol ProductServiceProtocol {
+    /// Fetches all available product categories.
+    /// - Returns: An array of `ProductCategory` on success.
+    /// - Throws: `HTTPError` when the request or decoding fails.
+    func getProductCategories() async throws(HTTPError) -> [ProductCategory]
+    
+    /// Fetches all products.
+    /// - Returns: An array of `Products` on success.
+    /// - Throws: `HTTPError` when the request or decoding fails.
+    func getProducts() async throws(HTTPError) -> [Product]
+    
+    /// Fetches products for a given category.
+    /// - Parameter categoryId: The category identifier.
+    /// - Returns: An array of `Product` on success.
+    /// - Throws: `HTTPError` when the request or decoding fails.
+    func getProductsByCategory(_ categoryId: UUID) async throws(HTTPError) -> [Product]
+    
+    /// Updates an existing product.
+    /// - Parameter credentials: Credentials used to authenticate.
+    /// - Parameter updateProduct: The product new properties.
+    /// - Throws: `HTTPError`  when the request or decoding fails.
+    func updateProduct(credentials: Credentials, updateProduct: ProductUpdate) async throws(HTTPError)
+}
+
+/// Default `ProductServiceProtocol` implementation using `URLSession` and JSON coders.
+final class ProductService {
+    /// JSON encoder used for encoding payloads when needed.
+    let jsonEncoder: JSONEncoder
+    
+    /// JSON decoder used to parse responses from the API.
+    let jsonDecoder: JSONDecoder
+    
+    /// Creates a new service with the provided JSON coders.
+    /// - Parameters:
+    ///   - jsonEncoder: Encoder for outgoing payloads.
+    ///   - jsonDecoder: Decoder for incoming responses.
+    init(jsonEncoder: JSONEncoder, jsonDecoder: JSONDecoder) {
+        self.jsonEncoder = jsonEncoder
+        self.jsonDecoder = jsonDecoder
+    }
+}
+
+extension ProductService: ProductServiceProtocol {
+    /// Issues a GET request to `/public/product-categories` and decodes the response.
+    func getProductCategories() async throws(HTTPError) -> [ProductCategory] {
+        let url = APIClient.shared.url
+            .appending(path: "public")
+            .appending(path: "product-categories")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw HTTPError.requestFailed(error)
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw HTTPError.invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw HTTPError.invalidStatusCode(httpResponse.statusCode)
+        }
+        
+        do {
+            return try jsonDecoder.decode([ProductCategory].self, from: data)
+        } catch {
+            throw HTTPError.invalidResponse
+        }
+    }
+    
+    /// Issues a GET request to `/public/products` and decodes the response.
+    func getProducts() async throws(HTTPError) -> [Product] {
+        let url = APIClient.shared.url
+            .appending(path: "public")
+            .appending(path: "products")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw HTTPError.requestFailed(error)
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw HTTPError.invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw HTTPError.invalidStatusCode(httpResponse.statusCode)
+        }
+        
+        do {
+            return try jsonDecoder.decode([Product].self, from: data)
+        } catch {
+            throw HTTPError.responseBodyDecodingFailed(error)
+        }
+    }
+    
+    /// Issues a GET request to `/public/products?category_id=...` and decodes the response.
+    func getProductsByCategory(_ categoryId: UUID) async throws(HTTPError) -> [Product] {
+        let url = APIClient.shared.url
+            .appending(path: "public")
+            .appending(path: "products")
+            .appending(queryItems: [
+                URLQueryItem(name: "category_id", value: categoryId.uuidString)
+            ])
+    
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw HTTPError.requestFailed(error)
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw HTTPError.invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw HTTPError.invalidStatusCode(httpResponse.statusCode)
+        }
+        
+        do {
+            return try jsonDecoder.decode([Product].self, from: data)
+        } catch {
+            throw HTTPError.responseBodyDecodingFailed(error)
+        }
+    }
+    /// Issues a PATCH request to `/admin/products/{id}` and checks the status code.
+    func updateProduct(credentials: Credentials, updateProduct: ProductUpdate) async throws(HTTPError) {
+        let basicCredentials = "\(credentials.username):\(credentials.password)"
+        let data = Data(basicCredentials.utf8)
+        let base64Credentials = data.base64EncodedString()
+        
+        let url = APIClient.shared.url
+            .appending(path: "admin")
+            .appending(path: "products")
+            .appending(path: updateProduct.id.uuidString)
+        
+        
+        var request = URLRequest(url: url)
+        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try jsonEncoder.encode(updateProduct)
+        } catch {
+            throw HTTPError.bodyEncodingFailed(error)
+        }
+        
+        let response: URLResponse
+        
+        do {
+            (_, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw HTTPError.requestFailed(error)
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw HTTPError.invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw HTTPError.invalidStatusCode(httpResponse.statusCode)
+        }
+    }
+}
+

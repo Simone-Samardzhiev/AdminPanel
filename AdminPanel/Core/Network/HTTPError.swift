@@ -12,18 +12,19 @@ import Foundation
 /// These cases intentionally avoid leaking transport details into higher layers.
 enum HTTPError: Error, LocalizedError {
     /// The request could not be completed (e.g., connectivity or timeout).
-    case requestFailed
-    /// The response was not valid or could not be decoded.
+    case requestFailed(Error)
+    
+    /// Response was not a valid HTTP response.
     case invalidResponse
     
-    var failureReason: String? {
-        switch self {
-        case .requestFailed:
-            return "The request could not be completed."
-        case .invalidResponse:
-            return "The response was not valid or could not be decoded."
-        }
-    }
+    /// The response status code was not expected.
+    case invalidStatusCode(Int)
+
+    /// The response body couldn't be decoded.
+    case responseBodyDecodingFailed(Error)
+
+    /// The request body couldn't be encoded.
+    case bodyEncodingFailed(Error)
 }
 
 extension HTTPError {
@@ -31,7 +32,7 @@ extension HTTPError {
         switch self {
         case .requestFailed:
             return "Couldn’t connect. Please check your internet and try again."
-        case .invalidResponse:
+        default:
             return "Something went wrong. Please try again later."
         }
     }

@@ -23,8 +23,8 @@ struct AdminPanelApp: App {
         WindowGroup {
             Group {
                 switch authenticationState.state {
-                case .authenticated(_):
-                    PanelView()
+                case .authenticated(let credentials):
+                    PanelView(credentials)
                         .transition(.asymmetric(
                             insertion: .move(edge: .trailing).combined(with: .opacity),
                             removal: .move(edge: .leading).combined(with: .opacity)

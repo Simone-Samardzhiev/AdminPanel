@@ -68,6 +68,8 @@ final class ProductsViewModel {
         loadHelperData()
     }
     
+    
+    /// Loads helper data to validate or access products faster.
     private func loadHelperData() {
         categoryNames.reserveCapacity(categories.count)
         
@@ -94,6 +96,9 @@ final class ProductsViewModel {
     }
     
     
+    /// Validates products information.
+    /// - Parameter product: The product to be validated.
+    /// - Returns: String representing the user error message or nil of the product is valid.
     private func validateProduct(_ product: Product) -> String? {
         guard product.name.count >= 3 && product.name.count <= 100 else {
             return "Name should be between 3 and 100 characters!"
@@ -114,22 +119,25 @@ final class ProductsViewModel {
         return nil
     }
     
-    func updateProduct(_ newProduct: Product) async -> String? {
-        guard let index = mapProductIdToIndex[newProduct.id] else {
+    /// Updates an existing product.
+    /// - Parameter updatedProduct: The product that should be updated
+    /// - Returns: String representing the user error message or nil of the product was edited successfully.
+    func updateProduct(_ updatedProduct: Product) async -> String? {
+        guard let index = mapProductIdToIndex[updatedProduct.id] else {
             return "Something went wrong when updating the product!"
         }
         
         let oldProduct = products[index]
-        if oldProduct == newProduct {
+        if oldProduct == updatedProduct {
             return nil
         }
         
         
-        if oldProduct.name != newProduct.name && productNames.contains(newProduct.name) {
+        if oldProduct.name != updatedProduct.name && productNames.contains(updatedProduct.name) {
             return "Product name already in use!"
         }
         
-        if let errorMessage = validateProduct(newProduct) {
+        if let errorMessage = validateProduct(updatedProduct) {
             return errorMessage
         }
         
@@ -138,10 +146,10 @@ final class ProductsViewModel {
                 credentials: credentials,
                 updateProduct: ProductUpdate(
                     id: oldProduct.id,
-                    newName: oldProduct.name == newProduct.name ? nil : newProduct.name,
-                    newDescription: oldProduct.description == newProduct.description ? nil : newProduct.description,
-                    newCategory: oldProduct.category == newProduct.category ? nil : newProduct.category,
-                    newPrice: oldProduct.price == newProduct.price ? nil : newProduct.price
+                    newName: oldProduct.name == updatedProduct.name ? nil : updatedProduct.name,
+                    newDescription: oldProduct.description == updatedProduct.description ? nil : updatedProduct.description,
+                    newCategory: oldProduct.category == updatedProduct.category ? nil : updatedProduct.category,
+                    newPrice: oldProduct.price == updatedProduct.price ? nil : updatedProduct.price
                 )
             )
         } catch {
@@ -151,11 +159,40 @@ final class ProductsViewModel {
             return error.userMessage
         }
         
-        products[index] = newProduct
+        products[index] = updatedProduct
         productNames.remove(oldProduct.name)
-        productNames.insert(newProduct.name)
+        productNames.insert(updatedProduct.name)
         
         return nil
+    }
+    
+    /// Updates the image of a specific product.
+    /// - Parameters:
+    ///   - panelViewMode: Panel view model to update the panel state.
+    ///   - productId: The product id.
+    ///   - imageData: The image data.
+    func updateProductImage(panelViewMode: PanelViewModel, productId: UUID, imageData: Data) async {
+        let imageUpdate: ImageUpdate
+        
+        do {
+            imageUpdate = try await productService.updateImage(
+                credentials: credentials,
+                productId: productId,
+                image: imageData
+            )
+        } catch {
+            #if DEBUG
+            print(error)
+            #endif
+            panelViewMode.errorMessage = error.userMessage
+            return
+        }
+        
+        if let index = mapProductIdToIndex[productId] {
+            products[index].imageUrl = imageUpdate.url
+        } else {
+            panelViewMode.errorMessage = "Error updating image!"
+        }
     }
 }
 

@@ -32,6 +32,16 @@ protocol ProductServiceProtocol {
     /// - Parameter updateProduct: The product new properties.
     /// - Throws: `HTTPError`  when the request or decoding fails.
     func updateProduct(credentials: Credentials, updateProduct: ProductUpdate) async throws(HTTPError)
+    
+    
+    /// Updates the image of a product.
+    /// - Parameters:
+    ///   - credentials: Credentials used to authenticate.
+    ///   - productId: The specific id of the product.
+    ///   - image: The image data.
+    /// - Returns: `ImageUpdate` with data for the new image..
+    /// - Throws: `HTTPError`  when the request or decoding fails.
+    func updateImage(credentials: Credentials, productId: UUID, image: Data) async throws(HTTPError) -> ImageUpdate
 }
 
 /// Default `ProductServiceProtocol` implementation using `URLSession` and JSON coders.
@@ -67,21 +77,21 @@ extension ProductService: ProductServiceProtocol {
         do {
             (data, response) = try await URLSession.shared.data(for: request)
         } catch {
-            throw HTTPError.requestFailed(error)
+            throw .requestFailed(error)
         }
         
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw HTTPError.invalidResponse
+            throw .invalidResponse
         }
         
         guard httpResponse.statusCode == 200 else {
-            throw HTTPError.invalidStatusCode(httpResponse.statusCode)
+            throw .invalidStatusCode(httpResponse.statusCode)
         }
         
         do {
             return try jsonDecoder.decode([ProductCategory].self, from: data)
         } catch {
-            throw HTTPError.invalidResponse
+            throw .invalidResponse
         }
     }
     
@@ -99,21 +109,21 @@ extension ProductService: ProductServiceProtocol {
         do {
             (data, response) = try await URLSession.shared.data(for: request)
         } catch {
-            throw HTTPError.requestFailed(error)
+            throw .requestFailed(error)
         }
         
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw HTTPError.invalidResponse
+            throw .invalidResponse
         }
         
         guard httpResponse.statusCode == 200 else {
-            throw HTTPError.invalidStatusCode(httpResponse.statusCode)
+            throw .invalidStatusCode(httpResponse.statusCode)
         }
         
         do {
             return try jsonDecoder.decode([Product].self, from: data)
         } catch {
-            throw HTTPError.responseBodyDecodingFailed(error)
+            throw .responseBodyDecodingFailed(error)
         }
     }
     
@@ -134,28 +144,28 @@ extension ProductService: ProductServiceProtocol {
         do {
             (data, response) = try await URLSession.shared.data(for: request)
         } catch {
-            throw HTTPError.requestFailed(error)
+            throw .requestFailed(error)
         }
         
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw HTTPError.invalidResponse
+            throw .invalidResponse
         }
         
         guard httpResponse.statusCode == 200 else {
-            throw HTTPError.invalidStatusCode(httpResponse.statusCode)
+            throw .invalidStatusCode(httpResponse.statusCode)
         }
         
         do {
             return try jsonDecoder.decode([Product].self, from: data)
         } catch {
-            throw HTTPError.responseBodyDecodingFailed(error)
+            throw .responseBodyDecodingFailed(error)
         }
     }
     /// Issues a PATCH request to `/admin/products/{id}` and checks the status code.
     func updateProduct(credentials: Credentials, updateProduct: ProductUpdate) async throws(HTTPError) {
         let basicCredentials = "\(credentials.username):\(credentials.password)"
-        let data = Data(basicCredentials.utf8)
-        let base64Credentials = data.base64EncodedString()
+        let credentialsData = Data(basicCredentials.utf8)
+        let base64Credentials = credentialsData.base64EncodedString()
         
         let url = APIClient.shared.url
             .appending(path: "admin")
@@ -164,14 +174,14 @@ extension ProductService: ProductServiceProtocol {
         
         
         var request = URLRequest(url: url)
-        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
         request.httpMethod = "PATCH"
+        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         do {
             request.httpBody = try jsonEncoder.encode(updateProduct)
         } catch {
-            throw HTTPError.bodyEncodingFailed(error)
+            throw .bodyEncodingFailed(error)
         }
         
         let response: URLResponse
@@ -179,15 +189,55 @@ extension ProductService: ProductServiceProtocol {
         do {
             (_, response) = try await URLSession.shared.data(for: request)
         } catch {
-            throw HTTPError.requestFailed(error)
+            throw .requestFailed(error)
         }
         
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw HTTPError.invalidResponse
+            throw .invalidResponse
         }
         
         guard httpResponse.statusCode == 200 else {
-            throw HTTPError.invalidStatusCode(httpResponse.statusCode)
+            throw .invalidStatusCode(httpResponse.statusCode)
+        }
+    }
+    
+    func updateImage(credentials: Credentials, productId: UUID, image: Data) async throws(HTTPError) -> ImageUpdate {
+        let basicCredentials = "\(credentials.username):\(credentials.password)"
+        let credentialsData = Data(basicCredentials.utf8)
+        let base64Credentials = credentialsData.base64EncodedString()
+        
+        let url = APIClient.shared.url
+            .appending(path: "admin")
+            .appending(path: "products")
+            .appending(path: productId.uuidString)
+            .appending(path: "image")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.httpBody = image
+        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+        
+        let data: Data
+        let response: URLResponse
+        
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw .requestFailed(error)
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw .invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw .invalidStatusCode(httpResponse.statusCode)
+        }
+        
+        do {
+            return try jsonDecoder.decode(ImageUpdate.self, from: data)
+        } catch {
+            throw .responseBodyDecodingFailed(error)
         }
     }
 }

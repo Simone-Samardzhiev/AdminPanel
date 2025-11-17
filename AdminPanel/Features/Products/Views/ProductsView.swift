@@ -46,6 +46,14 @@ struct ProductsView: View {
                             Button("Change image", systemImage: "photo") {
                                 productIdImageToUpdate = product.id
                             }
+                            Button("Delete product", systemImage: "trash") {
+                                Task {
+                                    await productViewModel.deleteProduct(
+                                        panelViewModel: panelViewModel,
+                                        productId: product.id
+                                    )
+                                }
+                            }
                         }
                 }
             }
@@ -83,7 +91,7 @@ struct ProductsView: View {
         
         Task {
             await productViewModel.updateProductImage(
-                panelViewMode: panelViewModel,
+                panelViewModel: panelViewModel,
                 productId: productId,
                 imageData: data
             )

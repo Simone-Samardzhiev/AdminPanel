@@ -33,7 +33,6 @@ protocol ProductServiceProtocol {
     /// - Throws: `HTTPError`  when the request or decoding fails.
     func updateProduct(credentials: Credentials, updateProduct: ProductUpdate) async throws(HTTPError)
     
-    
     /// Updates the image of a product.
     /// - Parameters:
     ///   - credentials: Credentials used to authenticate.
@@ -42,6 +41,18 @@ protocol ProductServiceProtocol {
     /// - Returns: `ImageUpdate` with data for the new image..
     /// - Throws: `HTTPError`  when the request or decoding fails.
     func updateImage(credentials: Credentials, productId: UUID, image: Data) async throws(HTTPError) -> ImageUpdate
+    
+    /// Deletes a product by id.
+    /// - Parameters:
+    ///   - credentials: Credentials used to authenticate..
+    ///   - productId: The id of the product to delete.
+    func deleteProduct(credentials: Credentials, productId: UUID) async throws(HTTPError)
+    
+    /// Deletes all products with specified category id.
+    /// - Parameters:
+    ///   - credentials: Credentials used to authenticate..
+    ///   - categoryId: The category id.
+    func deleteProduct(credentials: Credentials, categoryId: UUID) async throws (HTTPError)
 }
 
 /// Default `ProductServiceProtocol` implementation using `URLSession` and JSON coders.
@@ -161,6 +172,7 @@ extension ProductService: ProductServiceProtocol {
             throw .responseBodyDecodingFailed(error)
         }
     }
+    
     /// Issues a PATCH request to `/admin/products/{id}` and checks the status code.
     func updateProduct(credentials: Credentials, updateProduct: ProductUpdate) async throws(HTTPError) {
         let basicCredentials = "\(credentials.username):\(credentials.password)"
@@ -201,6 +213,7 @@ extension ProductService: ProductServiceProtocol {
         }
     }
     
+    /// Issues a PUt request to `/admin/products/{id}/image` and returns the new image data..
     func updateImage(credentials: Credentials, productId: UUID, image: Data) async throws(HTTPError) -> ImageUpdate {
         let basicCredentials = "\(credentials.username):\(credentials.password)"
         let credentialsData = Data(basicCredentials.utf8)
@@ -238,6 +251,72 @@ extension ProductService: ProductServiceProtocol {
             return try jsonDecoder.decode(ImageUpdate.self, from: data)
         } catch {
             throw .responseBodyDecodingFailed(error)
+        }
+    }
+    
+    func deleteProduct(credentials: Credentials, productId: UUID) async throws(HTTPError) {
+        let basicCredentials = "\(credentials.username):\(credentials.password)"
+        let credentialsData = Data(basicCredentials.utf8)
+        let base64Credentials = credentialsData.base64EncodedString()
+        
+        let url = APIClient.shared.url
+            .appending(path: "admin")
+            .appending(path: "products")
+            .appending(queryItems: [
+                URLQueryItem(name: "product_id", value: productId.uuidString)
+            ])
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+
+        let response: URLResponse
+        
+        do {
+            (_, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw .requestFailed(error)
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw .invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw .invalidStatusCode(httpResponse.statusCode)
+        }
+    }
+    
+    func deleteProduct(credentials: Credentials, categoryId: UUID) async throws (HTTPError) {
+        let basicCredentials = "\(credentials.username):\(credentials.password)"
+        let credentialsData = Data(basicCredentials.utf8)
+        let base64Credentials = credentialsData.base64EncodedString()
+        
+        let url = APIClient.shared.url
+            .appending(path: "admin")
+            .appending(path: "products")
+            .appending(queryItems: [
+                URLQueryItem(name: "category_id", value: categoryId.uuidString)
+            ])
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+
+        let response: URLResponse
+        
+        do {
+            (_, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw .requestFailed(error)
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw .invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw .invalidStatusCode(httpResponse.statusCode)
         }
     }
 }

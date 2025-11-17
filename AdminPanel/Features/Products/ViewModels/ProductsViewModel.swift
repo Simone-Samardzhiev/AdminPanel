@@ -171,7 +171,12 @@ final class ProductsViewModel {
     ///   - panelViewMode: Panel view model to update the panel state.
     ///   - productId: The product id.
     ///   - imageData: The image data.
-    func updateProductImage(panelViewMode: PanelViewModel, productId: UUID, imageData: Data) async {
+    func updateProductImage(panelViewModel: PanelViewModel, productId: UUID, imageData: Data) async {
+        panelViewModel.isLoading = true
+        defer {
+            panelViewModel.isLoading = false
+        }
+        
         let imageUpdate: ImageUpdate
         
         do {
@@ -184,15 +189,42 @@ final class ProductsViewModel {
             #if DEBUG
             print(error)
             #endif
-            panelViewMode.errorMessage = error.userMessage
+            panelViewModel.errorMessage = error.userMessage
             return
         }
         
         if let index = mapProductIdToIndex[productId] {
             products[index].imageUrl = imageUpdate.url
         } else {
-            panelViewMode.errorMessage = "Error updating image!"
+            panelViewModel.errorMessage = "Error updating image!"
         }
+    }
+    
+    /// Deletes a product by specific id.
+    /// - Parameters:
+    ///   - panelViewModel: Panel view model to update the panel state.
+    ///   - productId: The product id.
+    func deleteProduct(panelViewModel: PanelViewModel, productId: UUID) async {
+        panelViewModel.isLoading = true
+        defer {
+            panelViewModel.isLoading = false
+        }
+        
+        guard let index = mapProductIdToIndex[productId] else {
+            panelViewModel.errorMessage = "Error deleting product!"
+            return
+
+        }
+        
+        do {
+            try await productService.deleteProduct(credentials: credentials, productId: productId)
+        } catch {
+            panelViewModel.errorMessage = error.userMessage
+            return
+        }
+        
+        productNames.remove(products[index].name)
+        products.remove(at: index)
     }
 }
 

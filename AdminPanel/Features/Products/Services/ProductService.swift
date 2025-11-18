@@ -28,6 +28,11 @@ protocol ProductServiceProtocol {
     func getProductsByCategory(_ categoryId: UUID) async throws(HTTPError) -> [Product]
     
     
+    /// Adds a new category
+    /// - Parameter category: The category name.
+    /// - Returns: The created category.
+    func addCategory(credentials: Credentials, category: AddCategory) async throws(HTTPError) -> ProductCategory
+    
     /// Adds a new product.
     /// - Parameters:
     ///   - credentials: Credentials used to authenticate.
@@ -182,6 +187,51 @@ extension ProductService: ProductServiceProtocol {
         }
     }
     
+    /// Issues a POST request to `admin/categories`
+    func addCategory(credentials: Credentials, category: AddCategory) async throws(HTTPError) -> ProductCategory {
+        let basicCredentials = "\(credentials.username):\(credentials.password)"
+        let credentialsData = Data(basicCredentials.utf8)
+        let base64Credentials = credentialsData.base64EncodedString()
+        
+        let url = APIClient.shared.url
+            .appending(path: "admin")
+            .appending(path: "categories")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try jsonEncoder.encode(category)
+        } catch {
+            throw .bodyEncodingFailed(error)
+        }
+        
+        let data: Data
+        let response: URLResponse
+        
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw .requestFailed(error)
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw .invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 201 else {
+            throw .invalidStatusCode(httpResponse.statusCode)
+        }
+        
+        do {
+            return try jsonDecoder.decode(ProductCategory.self, from: data)
+        } catch {
+            throw .responseBodyDecodingFailed(error)
+        }
+    }
+
     /// Issues a POST request to `/admin/products` and decodes the response.
     func addProduct(credentials: Credentials, product: AddProduct) async throws(HTTPError) -> Product {
         let basicCredentials = "\(credentials.username):\(credentials.password)"

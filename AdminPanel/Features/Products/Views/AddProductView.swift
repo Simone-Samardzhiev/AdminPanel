@@ -13,7 +13,7 @@ struct AddProductView: View {
     
     @Environment(PanelViewModel.self) var panelViewModel
     
-    @Environment(ProductsViewModel.self) var productViewModel
+    @Environment(ProductsViewModel.self) var productsViewModel
     
     /// Error message to be displayed.
     @State var errorMessage: String?
@@ -51,7 +51,7 @@ struct AddProductView: View {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Add") {
                     Task {
-                        errorMessage = await productViewModel.addProduct(product)
+                        errorMessage = await productsViewModel.addProduct(product)
                         if errorMessage == nil {
                             dismiss()
                         }
@@ -108,7 +108,7 @@ struct AddProductView: View {
     /// Picker to edit the product category.
     private var categoryPicker: some View {
         Picker("Category", selection: $product.category) {
-            ForEach(productViewModel.categories) {category in
+            ForEach(productsViewModel.categories) {category in
                 Text(category.name)
                     .tag(category.id)
             }

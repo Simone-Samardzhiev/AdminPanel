@@ -95,6 +95,43 @@ final class ProductsViewModel {
         }
     }
     
+    func addCategory(panelViewModel: PanelViewModel, categoryName: String) async -> String? {
+        panelViewModel.isLoading = true
+        defer {
+            panelViewModel.isLoading = false
+        }
+        
+        
+        guard categoryName.count >= 4 && categoryName.count <= 100 else {
+            return "Name should be between 3 and 100 characters!"
+        }
+        
+        guard !categoryNames.contains(categoryName) else {
+            return "Name of category is already in use!"
+        }
+        
+        
+        let createdCategory: ProductCategory
+        
+        do {
+            createdCategory = try await productService.addCategory(
+                credentials: credentials,
+                category: AddCategory(name: categoryName)
+            )
+        } catch {
+            #if DEBUG
+            print(error)
+            #endif
+            return error.userMessage
+        }
+        
+        categories.append(createdCategory)
+        categoryNames.insert(createdCategory.name)
+        
+        return nil
+    }
+    
+    
     /// Validates products information.
     /// - Parameter product: The product to be validated.
     /// - Returns: String representing the user error message or nil of the product is valid.

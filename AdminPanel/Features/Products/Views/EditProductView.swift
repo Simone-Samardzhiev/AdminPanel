@@ -11,7 +11,7 @@ import SwiftUI
 struct EditProductView: View {
     @Environment(\.dismiss) private var dismiss
     
-    @Environment(ProductsViewModel.self) var productViewModel
+    @Environment(ProductsViewModel.self) var productsViewModel
     
     @State private var product: Product
     
@@ -51,7 +51,7 @@ struct EditProductView: View {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") {
                     Task {
-                        errorMessage = await productViewModel.updateProduct(product)
+                        errorMessage = await productsViewModel.updateProduct(product)
                         if errorMessage == nil {
                             dismiss()
                         }
@@ -104,7 +104,7 @@ struct EditProductView: View {
     /// Picker to edit the product category.
     private var categoryPicker: some View {
         Picker("Category", selection: $product.category) {
-            ForEach(productViewModel.categories) {category in
+            ForEach(productsViewModel.categories) {category in
                 Text(category.name)
                     .tag(category.id)
             }

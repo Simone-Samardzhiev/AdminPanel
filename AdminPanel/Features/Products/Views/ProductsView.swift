@@ -14,7 +14,7 @@ struct ProductsView: View {
     @Environment(PanelViewModel.self) private var panelViewModel
     
     /// Injected view model used to fetch and cache products.
-    @Environment(ProductsViewModel.self) private var productViewModel
+    @Environment(ProductsViewModel.self) private var productsViewModel
     
     /// The identifier of the category to display.
     private let productCategoryId: UUID
@@ -23,36 +23,20 @@ struct ProductsView: View {
     
     @State private var productIdImageToUpdate: UUID?
     
-    @State private var isAddProductSheetPresent: Bool
-    
     /// Creates the view for a specific product category.
     /// - Parameter productCategoryId: The identifier of the category to display.
     init(_ productCategoryId: UUID) {
         self.productCategoryId = productCategoryId
         self.productToEdit = nil
         self.productIdImageToUpdate = nil
-        self.isAddProductSheetPresent = false
     }
     
     /// Renders product cards and triggers loading when the category changes.
     var body: some View {
         VStack {
-            HStack {
-                Spacer()
-                
-                Button("Add product", systemImage: "plus") {
-                    isAddProductSheetPresent = true
-                }
-                .buttonStyle(.automatic)
-                .frame(maxWidth: .infinity)
-                                
-                Spacer()
-            }
-            .padding(.top, 16)
-            
             ScrollView {
                 LazyVStack(spacing: 20) {
-                    ForEach(productViewModel.getProductsByCategory(productCategoryId)) { product in
+                    ForEach(productsViewModel.getProductsByCategory(productCategoryId)) { product in
                         ProductCard(product)
                             .padding(.horizontal, 24)
                             .transition(.opacity)
@@ -65,7 +49,7 @@ struct ProductsView: View {
                                 }
                                 Button("Delete product", systemImage: "trash") {
                                     Task {
-                                        await productViewModel.deleteProduct(
+                                        await productsViewModel.deleteProduct(
                                             panelViewModel: panelViewModel,
                                             productId: product.id
                                         )
@@ -77,10 +61,6 @@ struct ProductsView: View {
                 .padding(.vertical, 20)
                 .sheet(item: $productToEdit) {product in
                     EditProductView(product)
-                }
-                .sheet(isPresented: $isAddProductSheetPresent) {
-                    AddProductView()
-                        .environment(productViewModel)
                 }
                 .fileImporter(
                     isPresented: .constant(productIdImageToUpdate != nil),
@@ -112,7 +92,7 @@ struct ProductsView: View {
         }
         
         Task {
-            await productViewModel.updateProductImage(
+            await productsViewModel.updateProductImage(
                 panelViewModel: panelViewModel,
                 productId: productId,
                 imageData: data

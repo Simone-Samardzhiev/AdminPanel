@@ -9,7 +9,7 @@ import SwiftUI
 
 /// Displays a remote image when available, otherwise a placeholder.
 struct ProductImageView: View {
-    let stringURL: String?
+    private let stringURL: String?
     
     init(_ stringURL: String?) {
         self.stringURL = stringURL

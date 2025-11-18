@@ -3,6 +3,17 @@
    version = "1.0">
    <ContextStates>
       <ContextState
+         contextName = "ProductsViewModel.updateProduct(_:):ProductsViewModel.swift">
+      </ContextState>
+      <ContextState
+         contextName = "ProductService.updateCategory(credentials:categoryUpdate:):ProductService.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "httpResponse.statusCode">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
          contextName = "ProductService.updateProduct(credentials:updateProduct:):ProductService.swift">
          <PersistentStrings>
             <PersistentString
@@ -17,9 +28,6 @@
                value = "error.localizedDescription">
             </PersistentString>
          </PersistentStrings>
-      </ContextState>
-      <ContextState
-         contextName = "ProductsViewModel.updateProduct(_:):ProductsViewModel.swift">
       </ContextState>
    </ContextStates>
 </VariablesViewState>

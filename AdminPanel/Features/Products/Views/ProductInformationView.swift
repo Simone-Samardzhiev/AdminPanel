@@ -9,7 +9,7 @@ import SwiftUI
 
 /// Shows the product's textual information such as name, description, and price.
 struct ProductInformationView: View {
-    let product: Product
+    private let product: Product
     
     init(_ product: Product) {
         self.product = product

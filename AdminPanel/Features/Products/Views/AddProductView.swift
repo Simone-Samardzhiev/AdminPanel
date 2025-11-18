@@ -11,9 +11,9 @@ import SwiftUI
 struct AddProductView: View {
     @Environment(\.dismiss) private var dismiss
     
-    @Environment(PanelViewModel.self) var panelViewModel
+    @Environment(PanelViewModel.self) private var panelViewModel
     
-    @Environment(ProductsViewModel.self) var productsViewModel
+    @Environment(ProductsViewModel.self) private var productsViewModel
     
     /// Error message to be displayed.
     @State var errorMessage: String?

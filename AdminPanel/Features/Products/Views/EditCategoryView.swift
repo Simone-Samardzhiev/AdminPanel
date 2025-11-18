@@ -1,5 +1,5 @@
 //
-//  AddCategoryView.swift
+//  EditCategoryView.swift
 //  AdminPanel
 //
 //  Created by Simone Samardzhiev on 18.11.25.
@@ -8,23 +8,28 @@
 import SwiftUI
 
 
-struct AddCategoryView: View {
-    
-    @Environment(PanelViewModel.self) private  var panelViewModel
+/// View to update category information.
+struct EditCategoryView: View {
+    @Environment(PanelViewModel.self) private var panelViewModel
     
     @Environment(ProductsViewModel.self) private var productsViewModel
     
     @Environment(\.dismiss) private var dismiss
     
-    @State private var name: String
+    let oldName: String
+    let id: UUID
     
-    init() {
-        self.name = ""
+    @State var newName: String
+    
+    init(id: UUID, name: String) {
+        self.id = id
+        self.oldName = name
+        self.newName = name
     }
     
     var body: some View {
         LabeledContent("Name") {
-            TextField("Name", text: $name)
+            TextField("Name", text: $newName)
                 .textFieldStyle(.roundedBorder)
                 .textContentType(.name)
         }
@@ -37,10 +42,14 @@ struct AddCategoryView: View {
             }
             
             ToolbarItem(placement: .confirmationAction) {
-                Button("Add") {
+                Button("Done") {
                     Task {
-                        await productsViewModel.addCategory(
-                            panelViewModel: panelViewModel, categoryName: name)
+                        await productsViewModel.updateCategory(
+                            panelViewModel: panelViewModel,
+                            id: id,
+                            oldName: oldName,
+                            newName: newName
+                        )
                     }
                     dismiss()
                 }

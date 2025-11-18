@@ -27,11 +27,18 @@ protocol ProductServiceProtocol {
     /// - Throws: `HTTPError` when the request or decoding fails.
     func getProductsByCategory(_ categoryId: UUID) async throws(HTTPError) -> [Product]
     
-    
     /// Adds a new category
-    /// - Parameter category: The category name.
+    /// - Parameters:
+    ///   - credentials: Credentials used to authenticate.
+    ///   - category: The category name.
     /// - Returns: The created category.
     func addCategory(credentials: Credentials, category: AddCategory) async throws(HTTPError) -> ProductCategory
+    
+    /// Updates an existing category.
+    /// - Parameters:
+    ///   - credentials: Credentials used to authenticate.
+    ///   - categoryUpdate: The category new properties.
+    func updateCategory(credentials: Credentials, categoryUpdate: CategoryUpdate) async throws(HTTPError)
     
     /// Adds a new product.
     /// - Parameters:
@@ -45,7 +52,7 @@ protocol ProductServiceProtocol {
     /// - Parameter credentials: Credentials used to authenticate.
     /// - Parameter updateProduct: The product new properties.
     /// - Throws: `HTTPError`  when the request or decoding fails.
-    func updateProduct(credentials: Credentials, updateProduct: ProductUpdate) async throws(HTTPError)
+    func updateProduct(credentials: Credentials, productUpdate: ProductUpdate) async throws(HTTPError)
     
     /// Updates the image of a product.
     /// - Parameters:
@@ -187,7 +194,7 @@ extension ProductService: ProductServiceProtocol {
         }
     }
     
-    /// Issues a POST request to `admin/categories`
+    /// Issues a POST request to `admin/categories` and decodes the response
     func addCategory(credentials: Credentials, category: AddCategory) async throws(HTTPError) -> ProductCategory {
         let basicCredentials = "\(credentials.username):\(credentials.password)"
         let credentialsData = Data(basicCredentials.utf8)
@@ -229,6 +236,44 @@ extension ProductService: ProductServiceProtocol {
             return try jsonDecoder.decode(ProductCategory.self, from: data)
         } catch {
             throw .responseBodyDecodingFailed(error)
+        }
+    }
+    
+    /// Issues a PATCH request to `admin/categories/{id}` and checks the status code.
+    func updateCategory(credentials: Credentials, categoryUpdate: CategoryUpdate) async throws(HTTPError) {
+        let basicCredentials = "\(credentials.username):\(credentials.password)"
+        let credentialsData = Data(basicCredentials.utf8)
+        let base64Credentials = credentialsData.base64EncodedString()
+        
+        let url = APIClient.shared.url
+            .appending(path: "admin")
+            .appending(path: "categories")
+            .appending(path: categoryUpdate.id.uuidString)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try jsonEncoder.encode(categoryUpdate)
+        } catch {
+            throw .bodyEncodingFailed(error)
+        }
+        
+        let response: URLResponse
+        do {
+            (_, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw .requestFailed(error)
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw .invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw .invalidStatusCode(httpResponse.statusCode)
         }
     }
 
@@ -278,7 +323,7 @@ extension ProductService: ProductServiceProtocol {
     }
 
     /// Issues a PATCH request to `/admin/products/{id}` and checks the status code.
-    func updateProduct(credentials: Credentials, updateProduct: ProductUpdate) async throws(HTTPError) {
+    func updateProduct(credentials: Credentials, productUpdate: ProductUpdate) async throws(HTTPError) {
         let basicCredentials = "\(credentials.username):\(credentials.password)"
         let credentialsData = Data(basicCredentials.utf8)
         let base64Credentials = credentialsData.base64EncodedString()
@@ -286,7 +331,7 @@ extension ProductService: ProductServiceProtocol {
         let url = APIClient.shared.url
             .appending(path: "admin")
             .appending(path: "products")
-            .appending(path: updateProduct.id.uuidString)
+            .appending(path: productUpdate.id.uuidString)
         
         
         var request = URLRequest(url: url)
@@ -295,7 +340,7 @@ extension ProductService: ProductServiceProtocol {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         do {
-            request.httpBody = try jsonEncoder.encode(updateProduct)
+            request.httpBody = try jsonEncoder.encode(productUpdate)
         } catch {
             throw .bodyEncodingFailed(error)
         }

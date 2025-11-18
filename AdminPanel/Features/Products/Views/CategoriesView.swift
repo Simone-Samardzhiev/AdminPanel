@@ -15,8 +15,7 @@ struct CategoriesView: View {
     /// Backing view model responsible for loading categories and products.
     @State private var productsViewModel: ProductsViewModel
     
-    @State private var isAddCategorySheetPresent: Bool
-    @State private var isAddProductSheetPresent: Bool
+    @State private var activeSheet: ActiveSheet?
     
     /// Creates the categories view and injects a `ProductService` and `PanelViewModel`.
     init(credentials: Credentials, productService: ProductServiceProtocol) {
@@ -24,20 +23,19 @@ struct CategoriesView: View {
             credentials: credentials,
             productService: productService
         )
-        
-        self.isAddCategorySheetPresent = false
-        self.isAddProductSheetPresent = false
+    
+        self.activeSheet = nil
     }
     
     /// Renders a list of categories and triggers loading on appearance.
     var body: some View {
         List {
             Button("Add category", systemImage: "plus") {
-                isAddCategorySheetPresent = true
+                activeSheet = .addCategory
             }
             
             Button("Add product", systemImage: "plus") {
-                isAddProductSheetPresent = true
+                activeSheet = .addProduct
             }
             
             Section {
@@ -47,22 +45,48 @@ struct CategoriesView: View {
                             .environment(productsViewModel)
                             .environment(panelViewModel)
                     }
+                    .contextMenu {
+                        Button("Edit", systemImage: "pencil") {
+                            activeSheet = .editCategory(id: category.id, name: category.name)
+                        }
+                    }
                 }
             }
         }
         .listStyle(.sidebar)
-        .sheet(isPresented: $isAddCategorySheetPresent) {
-            AddCategoryView()
-                .environment(panelViewModel)
-                .environment(productsViewModel)
-        }
-        .sheet(isPresented: $isAddProductSheetPresent) {
-            AddProductView()
-                .environment(productsViewModel)
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .addCategory:
+                AddCategoryView()
+                    .environment(panelViewModel)
+                    .environment(productsViewModel)
+            case .addProduct:
+                AddProductView()
+                    .environment(productsViewModel)
+            case .editCategory(let id, let name):
+                EditCategoryView(id: id, name: name)
+                    .environment(panelViewModel)
+                    .environment(productsViewModel)
+            }
         }
         .task {
             await productsViewModel.loadData(panelViewModel)
         }
+    }
+}
+
+extension CategoriesView {
+    private enum ActiveSheet: Identifiable {
+        var id: String {
+            switch self {
+            case .addProduct: return "addProduct"
+            case .addCategory: return "addCategory"
+            case .editCategory(let id, let name): return "\(id.uuidString)-\(name)"
+            }
+        }
+        case addProduct
+        case addCategory
+        case editCategory(id: UUID, name: String)
     }
 }
 

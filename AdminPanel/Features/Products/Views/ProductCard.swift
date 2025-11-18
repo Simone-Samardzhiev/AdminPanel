@@ -9,7 +9,7 @@ import SwiftUI
 
 /// A card-like row presenting a product's image and details.
 struct ProductCard: View {
-    let product: Product
+    private let product: Product
     @State private var hovering: Bool
     
     init(_ product: Product) {

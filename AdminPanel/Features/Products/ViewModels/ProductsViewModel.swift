@@ -95,7 +95,7 @@ final class ProductsViewModel {
         }
     }
     
-    func addCategory(panelViewModel: PanelViewModel, categoryName: String) async -> String? {
+    func addCategory(panelViewModel: PanelViewModel, categoryName: String) async  {
         panelViewModel.isLoading = true
         defer {
             panelViewModel.isLoading = false
@@ -103,13 +103,14 @@ final class ProductsViewModel {
         
         
         guard categoryName.count >= 4 && categoryName.count <= 100 else {
-            return "Name should be between 3 and 100 characters!"
+            panelViewModel.errorMessage = "Name should be between 3 and 100 characters!"
+            return
         }
         
         guard !categoryNames.contains(categoryName) else {
-            return "Name of category is already in use!"
+            panelViewModel.errorMessage = "Name of category is already in use!"
+            return
         }
-        
         
         let createdCategory: ProductCategory
         
@@ -119,16 +120,55 @@ final class ProductsViewModel {
                 category: AddCategory(name: categoryName)
             )
         } catch {
-            #if DEBUG
+#if DEBUG
             print(error)
-            #endif
-            return error.userMessage
+#endif
+            panelViewModel.errorMessage = error.userMessage
+            return
         }
         
         categories.append(createdCategory)
         categoryNames.insert(createdCategory.name)
+    }
+    
+    func updateCategory(panelViewModel: PanelViewModel, id: UUID, oldName: String, newName: String) async {
+        panelViewModel.isLoading = true
+        defer {
+            panelViewModel.isLoading = false
+        }
         
-        return nil
+        guard oldName != newName else {
+            return
+        }
+        
+        guard newName.count >= 4 && newName.count <= 100 else {
+            panelViewModel.errorMessage = "Name should be between 3 and 100 characters!"
+            return
+        }
+        
+        guard !categoryNames.contains(newName) else {
+            panelViewModel.errorMessage = "Name of category is already in use!"
+            return
+        }
+        
+        do {
+            try await productService.updateCategory(
+                credentials: credentials,
+                categoryUpdate: .init(id: id, name: newName)
+            )
+        } catch {
+#if DEBUG
+            print(error)
+#endif
+            panelViewModel.errorMessage = error.userMessage
+            return
+        }
+        
+        categoryNames.remove(oldName)
+        categories.removeAll(where: {$0.name == oldName})
+        
+        categoryNames.insert(newName)
+        categories.append(.init(id: id, name: newName))
     }
     
     
@@ -238,7 +278,7 @@ final class ProductsViewModel {
         do {
             try await productService.updateProduct(
                 credentials: credentials,
-                updateProduct: ProductUpdate(
+                productUpdate: ProductUpdate(
                     id: oldProduct.id,
                     newName: oldProduct.name == updatedProduct.name ? nil : updatedProduct.name,
                     newDescription: oldProduct.description == updatedProduct.description ? nil : updatedProduct.description,

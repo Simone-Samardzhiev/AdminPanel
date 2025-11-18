@@ -25,13 +25,22 @@ struct CategoriesView: View {
     
     /// Renders a list of categories and triggers loading on appearance.
     var body: some View {
-        List(productViewModel.categories) { category in
-            NavigationLink(category.name) {
-                ProductsView(category.id)
-                    .environment(productViewModel)
-                    .environment(panelViewModel)
+        List {
+            Button("Add category", systemImage: "plus") {
+                
+            }
+            
+            Section {
+                ForEach(productViewModel.categories) { category  in
+                    NavigationLink(category.name) {
+                        ProductsView(category.id)
+                            .environment(productViewModel)
+                            .environment(panelViewModel)
+                    }
+                }
             }
         }
+        .listStyle(.sidebar)
         .task {
             await productViewModel.loadData(panelViewModel)
         }

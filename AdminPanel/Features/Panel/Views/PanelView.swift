@@ -39,6 +39,7 @@ struct PanelView: View {
                     .environment(panelViewModel)
                 }
             }
+            .listStyle(.sidebar)
             .navigationTitle("Admin Panel")
             .alert("Error", isPresented: .constant(panelViewModel.errorMessage != nil)) {
                 Button(role: .close) {

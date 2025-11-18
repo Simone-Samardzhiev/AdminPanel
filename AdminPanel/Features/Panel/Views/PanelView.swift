@@ -47,7 +47,6 @@ struct PanelView: View {
             } message: {
                 Text(panelViewModel.errorMessage ?? "Error occurred!")
             }
-
         } content: {
             Text("Select an item")
         } detail: {

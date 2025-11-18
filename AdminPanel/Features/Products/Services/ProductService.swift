@@ -27,6 +27,15 @@ protocol ProductServiceProtocol {
     /// - Throws: `HTTPError` when the request or decoding fails.
     func getProductsByCategory(_ categoryId: UUID) async throws(HTTPError) -> [Product]
     
+    
+    /// Adds a new product.
+    /// - Parameters:
+    ///   - credentials: Credentials used to authenticate.
+    ///   - product: The product to be added.
+    /// - Returns: The newly created product.
+    /// - Throws: `HHTPError` when the request or decoding fails.
+    func addProduct(credentials: Credentials, product: AddProduct) async throws(HTTPError) -> Product
+    
     /// Updates an existing product.
     /// - Parameter credentials: Credentials used to authenticate.
     /// - Parameter updateProduct: The product new properties.
@@ -173,6 +182,51 @@ extension ProductService: ProductServiceProtocol {
         }
     }
     
+    /// Issues a POST request to `/admin/products` and decodes the response.
+    func addProduct(credentials: Credentials, product: AddProduct) async throws(HTTPError) -> Product {
+        let basicCredentials = "\(credentials.username):\(credentials.password)"
+        let credentialsData = Data(basicCredentials.utf8)
+        let base64Credentials = credentialsData.base64EncodedString()
+        
+        let url = APIClient.shared.url
+            .appending(path: "admin")
+            .appending(path: "products")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try jsonEncoder.encode(product)
+        } catch {
+            throw .bodyEncodingFailed(error)
+        }
+        
+        let data: Data
+        let response: URLResponse
+        
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw .requestFailed(error)
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw .invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 201 else {
+            throw .invalidStatusCode(httpResponse.statusCode)
+        }
+        
+        do {
+            return try jsonDecoder.decode(Product.self, from: data)
+        } catch {
+            throw .responseBodyDecodingFailed(error)
+        }
+    }
+
     /// Issues a PATCH request to `/admin/products/{id}` and checks the status code.
     func updateProduct(credentials: Credentials, updateProduct: ProductUpdate) async throws(HTTPError) {
         let basicCredentials = "\(credentials.username):\(credentials.password)"
@@ -213,7 +267,7 @@ extension ProductService: ProductServiceProtocol {
         }
     }
     
-    /// Issues a PUt request to `/admin/products/{id}/image` and returns the new image data..
+    /// Issues a PUT request to `/admin/products/{id}/image` and returns the new image data..
     func updateImage(credentials: Credentials, productId: UUID, image: Data) async throws(HTTPError) -> ImageUpdate {
         let basicCredentials = "\(credentials.username):\(credentials.password)"
         let credentialsData = Data(basicCredentials.utf8)
@@ -254,6 +308,7 @@ extension ProductService: ProductServiceProtocol {
         }
     }
     
+    /// Issues a DELETE request to `/admin/products?product_id=...` and checks the status code.
     func deleteProduct(credentials: Credentials, productId: UUID) async throws(HTTPError) {
         let basicCredentials = "\(credentials.username):\(credentials.password)"
         let credentialsData = Data(basicCredentials.utf8)
@@ -287,6 +342,7 @@ extension ProductService: ProductServiceProtocol {
         }
     }
     
+    /// Issues a DELETE request to `/admin/products?category_id=...` and checks the status code.
     func deleteProduct(credentials: Credentials, categoryId: UUID) async throws (HTTPError) {
         let basicCredentials = "\(credentials.username):\(credentials.password)"
         let credentialsData = Data(basicCredentials.utf8)

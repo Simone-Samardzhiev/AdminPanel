@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// Struct holding product update information.
 struct ProductUpdate: Encodable {
     let id: UUID
     let newName: String?
@@ -20,7 +21,8 @@ struct ProductUpdate: Encodable {
         case newCategory
         case newPrice
     }
-
+    
+    /// Encodes the struct by encoding the `newPrice` property as `String`
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
 

@@ -23,54 +23,76 @@ struct ProductsView: View {
     
     @State private var productIdImageToUpdate: UUID?
     
+    @State private var isAddProductSheetPresent: Bool
+    
     /// Creates the view for a specific product category.
     /// - Parameter productCategoryId: The identifier of the category to display.
     init(_ productCategoryId: UUID) {
         self.productCategoryId = productCategoryId
         self.productToEdit = nil
         self.productIdImageToUpdate = nil
+        self.isAddProductSheetPresent = false
     }
     
     /// Renders product cards and triggers loading when the category changes.
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 20) {
-                ForEach(productViewModel.getProductsByCategory(productCategoryId)) { product in
-                    ProductCard(product)
-                        .padding(.horizontal, 24)
-                        .transition(.opacity)
-                        .contextMenu {
-                            Button("Edit", systemImage: "pencil") {
-                                productToEdit = product
-                            }
-                            Button("Change image", systemImage: "photo") {
-                                productIdImageToUpdate = product.id
-                            }
-                            Button("Delete product", systemImage: "trash") {
-                                Task {
-                                    await productViewModel.deleteProduct(
-                                        panelViewModel: panelViewModel,
-                                        productId: product.id
-                                    )
+        VStack {
+            HStack {
+                Spacer()
+                
+                Button("Add product", systemImage: "plus") {
+                    isAddProductSheetPresent = true
+                }
+                .buttonStyle(.automatic)
+                .frame(maxWidth: .infinity)
+                                
+                Spacer()
+            }
+            .padding(.top, 16)
+            
+            ScrollView {
+                LazyVStack(spacing: 20) {
+                    ForEach(productViewModel.getProductsByCategory(productCategoryId)) { product in
+                        ProductCard(product)
+                            .padding(.horizontal, 24)
+                            .transition(.opacity)
+                            .contextMenu {
+                                Button("Edit", systemImage: "pencil") {
+                                    productToEdit = product
+                                }
+                                Button("Change image", systemImage: "photo") {
+                                    productIdImageToUpdate = product.id
+                                }
+                                Button("Delete product", systemImage: "trash") {
+                                    Task {
+                                        await productViewModel.deleteProduct(
+                                            panelViewModel: panelViewModel,
+                                            productId: product.id
+                                        )
+                                    }
                                 }
                             }
-                        }
-                }
-            }
-            .padding(.vertical, 20)
-            .sheet(item: $productToEdit) {product in
-                EditProductView(product)
-            }
-            .fileImporter(
-                isPresented: .constant(productIdImageToUpdate != nil),
-                allowedContentTypes: [.png, .jpeg]) { result in
-                    if let id = productIdImageToUpdate {
-                        onCompletionImportFile(
-                            productId: id,
-                            result: result
-                        )
                     }
                 }
+                .padding(.vertical, 20)
+                .sheet(item: $productToEdit) {product in
+                    EditProductView(product)
+                }
+                .sheet(isPresented: $isAddProductSheetPresent) {
+                    AddProductView()
+                        .environment(productViewModel)
+                }
+                .fileImporter(
+                    isPresented: .constant(productIdImageToUpdate != nil),
+                    allowedContentTypes: [.png, .jpeg]) { result in
+                        if let id = productIdImageToUpdate {
+                            onCompletionImportFile(
+                                productId: id,
+                                result: result
+                            )
+                        }
+                    }
+            }
         }
         .frame(minWidth: 500)
     }

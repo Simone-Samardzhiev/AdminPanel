@@ -95,6 +95,63 @@ final class ProductsViewModel {
         }
     }
     
+    /// Validates products information.
+    /// - Parameter product: The product to be validated.
+    /// - Returns: String representing the user error message or nil of the product is valid.
+    private func validateProduct(_ product: AddProduct) -> String? {
+        guard !productNames.contains(product.name) else {
+            return "Name is already used by another product!"
+        }
+        
+        guard product.name.count >= 3 && product.name.count <= 100 else {
+            return "Name should be between 3 and 100 characters!"
+        }
+        
+        guard product.description.count >= 15 else {
+            return "Description should be more that 15 characters!"
+        }
+        
+        guard product.category != nil else {
+            return "Please select a category!"
+        }
+        
+        guard product.price > 0  else {
+            return "Price should be more than 0!"
+        }
+        
+        guard product.price < 999999.99 else {
+            return "Price is too high!"
+        }
+        
+        return nil
+    }
+    
+    /// Adds a new product.
+    /// - Parameters:
+    ///   - panelViewModel: Panel view model to update the panel state.
+    ///   - product: The product to be added.
+    func addProduct(_ product: AddProduct) async -> String? {
+        if let errorMessage = validateProduct(product) {
+            return errorMessage
+        }
+        
+        let createdProduct: Product
+        do {
+            createdProduct = try await productService.addProduct(credentials: credentials, product: product)
+        } catch {
+#if DEBUG
+            print(error)
+#endif
+            return error.userMessage
+        }
+        
+        productNames.insert(createdProduct.name)
+        mapProductIdToIndex[createdProduct.id] = products.count
+        products.append(createdProduct)
+        
+        return nil
+    }
+    
     
     /// Validates products information.
     /// - Parameter product: The product to be validated.
@@ -186,9 +243,9 @@ final class ProductsViewModel {
                 image: imageData
             )
         } catch {
-            #if DEBUG
+#if DEBUG
             print(error)
-            #endif
+#endif
             panelViewModel.errorMessage = error.userMessage
             return
         }
@@ -213,7 +270,7 @@ final class ProductsViewModel {
         guard let index = mapProductIdToIndex[productId] else {
             panelViewModel.errorMessage = "Error deleting product!"
             return
-
+            
         }
         
         do {
@@ -225,6 +282,8 @@ final class ProductsViewModel {
         
         productNames.remove(products[index].name)
         products.remove(at: index)
+        mapProductIdToIndex = Dictionary(uniqueKeysWithValues: products.enumerated().map { (offset, product) in
+            (product.id, offset)
+        })
     }
 }
-

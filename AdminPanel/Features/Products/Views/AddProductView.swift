@@ -16,14 +16,14 @@ struct AddProductView: View {
     @Environment(ProductsViewModel.self) private var productsViewModel
     
     /// Error message to be displayed.
-    @State var errorMessage: String?
+    @State private var errorMessage: String?
     
-    /// Empty product.
-    @State var product: AddProduct
+    /// Empty product draft to create a product.
+    @State private var productDraft: ProductDraft
     
     init() {
         self.errorMessage = nil
-        self.product = .init()
+        self.productDraft = .init()
     }
     
     var body: some View {
@@ -50,11 +50,23 @@ struct AddProductView: View {
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button("Add") {
-                    Task {
-                        errorMessage = await productsViewModel.addProduct(product)
-                        if errorMessage == nil {
-                            dismiss()
+                    if let category = productDraft.category {
+                        Task {
+                            errorMessage = await productsViewModel.addProduct(
+                                .init(
+                                    name: productDraft.name,
+                                    description: productDraft.description,
+                                    category: category,
+                                    price: productDraft.price
+                                )
+                            )
                         }
+                    } else {
+                        errorMessage = "Please provide a category!"
+                    }
+                    
+                    if errorMessage == nil {
+                        dismiss()
                     }
                 }
             }
@@ -68,7 +80,7 @@ struct AddProductView: View {
     /// Text field to edit the name.
     private var nameEdit: some View {
         LabeledContent("Name") {
-            TextField("Name", text: $product.name)
+            TextField("Name", text: $productDraft.name)
                 .textFieldStyle(.roundedBorder)
                 .textContentType(.name)
         }
@@ -81,7 +93,7 @@ struct AddProductView: View {
                 .font(.callout.weight(.semibold))
                 .foregroundStyle(.secondary)
             
-            TextEditor(text: $product.description)
+            TextEditor(text: $productDraft.description)
                 .font(.body)
                 .frame(minHeight: 140)
                 .padding(12)
@@ -98,20 +110,37 @@ struct AddProductView: View {
     /// Text field to edit the price.
     private var priceEdit: some View {
         LabeledContent("Price") {
-            TextField("Price", value: $product.price, format: .currency(code: currencyCode))
+            TextField("Price", value: $productDraft.price, format: .currency(code: currencyCode))
                 .textFieldStyle(.roundedBorder)
                 .frame(maxWidth: 200)
         }
-
+        
     }
     
     /// Picker to edit the product category.
     private var categoryPicker: some View {
-        Picker("Category", selection: $product.category) {
+        Picker("Category", selection: $productDraft.category) {
             ForEach(productsViewModel.categories) {category in
                 Text(category.name)
                     .tag(category.id)
             }
+        }
+    }
+}
+
+private extension AddProductView {
+    
+    private struct ProductDraft {
+        var name: String
+        var description: String
+        var price: Decimal
+        var category: UUID?
+        
+        init() {
+            self.name = ""
+            self.description = ""
+            self.price = 0
+            self.category = nil
         }
     }
 }

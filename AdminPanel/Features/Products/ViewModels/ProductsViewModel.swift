@@ -6,6 +6,7 @@
 //
 
 import Foundation
+internal import os
 
 /// View model responsible for loading product categories and products,
 /// caching results per category, and coordinating loading state with `PanelViewModel`.
@@ -61,9 +62,7 @@ final class ProductsViewModel {
             self.products = try await productService.getProducts()
         } catch {
             panelViewModel.errorMessage = error.userMessage
-#if DEBUG
-            print(error)
-#endif
+            LoggerConfig.shared.logNetwork(level: .error, "Failed to load products: \(error.localizedDescription)")
         }
         loadHelperData()
     }
@@ -103,7 +102,7 @@ final class ProductsViewModel {
         
         
         guard categoryName.count >= 4 && categoryName.count <= 100 else {
-            panelViewModel.errorMessage = "Name should be between 3 and 100 characters!"
+            panelViewModel.errorMessage = "Name should be between 4 and 100 characters!"
             return
         }
         
@@ -117,12 +116,10 @@ final class ProductsViewModel {
         do {
             createdCategory = try await productService.addCategory(
                 credentials: credentials,
-                category: AddCategory(name: categoryName)
+                category: AddProductCategory(name: categoryName)
             )
         } catch {
-#if DEBUG
-            print(error)
-#endif
+            LoggerConfig.shared.logNetwork(level: .error, "Error adding category \(error.localizedDescription)")
             panelViewModel.errorMessage = error.userMessage
             return
         }
@@ -142,7 +139,7 @@ final class ProductsViewModel {
         }
         
         guard newName.count >= 4 && newName.count <= 100 else {
-            panelViewModel.errorMessage = "Name should be between 3 and 100 characters!"
+            panelViewModel.errorMessage = "Name should be between 4 and 100 characters!"
             return
         }
         
@@ -157,9 +154,7 @@ final class ProductsViewModel {
                 categoryUpdate: .init(id: id, name: newName)
             )
         } catch {
-#if DEBUG
-            print(error)
-#endif
+            LoggerConfig.shared.logNetwork(level: .error, "Error updating category \(error.localizedDescription)")
             panelViewModel.errorMessage = error.userMessage
             return
         }
@@ -171,36 +166,32 @@ final class ProductsViewModel {
         categories.append(.init(id: id, name: newName))
     }
     
-    
-    /// Validates products information.
-    /// - Parameter product: The product to be validated.
-    /// - Returns: String representing the user error message or nil of the product is valid.
-    private func validateProduct(_ product: AddProduct) -> String? {
-        guard !productNames.contains(product.name) else {
-            return "Name is already used by another product!"
+    func deleteCategory(panelViewModel: PanelViewModel, categoryId: UUID, categoryName: String) async {
+        panelViewModel.isLoading = true
+        defer {
+            panelViewModel.isLoading = false
         }
         
-        guard product.name.count >= 3 && product.name.count <= 100 else {
-            return "Name should be between 3 and 100 characters!"
+        do {
+            try await productService.deleteProductByCategoryId(credentials: credentials, categoryId: categoryId)
+            try await productService.deleteCategory(credentials: credentials, categoryId: categoryId)
+        } catch {
+#if DEBUG
+            print(error)
+#endif
+            panelViewModel.errorMessage = error.userMessage
+            return
         }
         
-        guard product.description.count >= 15 else {
-            return "Description should be more that 15 characters!"
-        }
+        categoryNames.remove(categoryName)
         
-        guard product.category != nil else {
-            return "Please select a category!"
-        }
+        categories.removeAll { $0.id == categoryId }
         
-        guard product.price > 0  else {
-            return "Price should be more than 0!"
-        }
+        products.removeAll { $0.category == categoryId }
         
-        guard product.price < 999999.99 else {
-            return "Price is too high!"
-        }
+        productNames = Set(products.map { $0.name })
         
-        return nil
+        mapProductIdToIndex = Dictionary(uniqueKeysWithValues: products.enumerated().map { ($0.element.id, $0.offset) })
     }
     
     /// Adds a new product.
@@ -208,17 +199,15 @@ final class ProductsViewModel {
     ///   - panelViewModel: Panel view model to update the panel state.
     ///   - product: The product to be added.
     func addProduct(_ product: AddProduct) async -> String? {
-        if let errorMessage = validateProduct(product) {
-            return errorMessage
+        if let validationError = product.validate() {
+            return validationError
         }
         
         let createdProduct: Product
         do {
             createdProduct = try await productService.addProduct(credentials: credentials, product: product)
         } catch {
-#if DEBUG
-            print(error)
-#endif
+            LoggerConfig.shared.logNetwork(level: .error, "Error adding product \(error.localizedDescription)")
             return error.userMessage
         }
         
@@ -229,35 +218,12 @@ final class ProductsViewModel {
         return nil
     }
     
-    
-    /// Validates products information.
-    /// - Parameter product: The product to be validated.
-    /// - Returns: String representing the user error message or nil of the product is valid.
-    private func validateProduct(_ product: Product) -> String? {
-        guard product.name.count >= 3 && product.name.count <= 100 else {
-            return "Name should be between 3 and 100 characters!"
-        }
-        
-        guard product.description.count >= 15 else {
-            return "Description should be more that 15 characters!"
-        }
-        
-        guard product.price > 0  else {
-            return "Price should be more than 0!"
-        }
-        
-        guard product.price < 999999.99 else {
-            return "Price is too high!"
-        }
-        
-        return nil
-    }
-    
     /// Updates an existing product.
     /// - Parameter updatedProduct: The product that should be updated
     /// - Returns: String representing the user error message or nil of the product was edited successfully.
     func updateProduct(_ updatedProduct: Product) async -> String? {
         guard let index = mapProductIdToIndex[updatedProduct.id] else {
+            LoggerConfig.shared.logCore(level: .error, "Error mapping product id to index(id = \(updatedProduct.id.uuidString))")
             return "Something went wrong when updating the product!"
         }
         
@@ -271,7 +237,7 @@ final class ProductsViewModel {
             return "Product name already in use!"
         }
         
-        if let errorMessage = validateProduct(updatedProduct) {
+        if let errorMessage = updatedProduct.validate() {
             return errorMessage
         }
         
@@ -287,9 +253,7 @@ final class ProductsViewModel {
                 )
             )
         } catch {
-#if DEBUG
-            print(error)
-#endif
+            LoggerConfig.shared.logNetwork(level: .error, "Error updating product \(error.localizedDescription)")
             return error.userMessage
         }
         
@@ -320,9 +284,7 @@ final class ProductsViewModel {
                 image: imageData
             )
         } catch {
-#if DEBUG
-            print(error)
-#endif
+            LoggerConfig.shared.logNetwork(level: .error, "Error updating image: \(error)")
             panelViewModel.errorMessage = error.userMessage
             return
         }
@@ -330,7 +292,8 @@ final class ProductsViewModel {
         if let index = mapProductIdToIndex[productId] {
             products[index].imageUrl = imageUpdate.url
         } else {
-            panelViewModel.errorMessage = "Error updating image!"
+            LoggerConfig.shared.logCore(level: .error, "Error mapping product id to index(id = \(productId.uuidString))")
+            panelViewModel.errorMessage = "Something went wrong when changing the product image!"
         }
     }
     
@@ -345,22 +308,21 @@ final class ProductsViewModel {
         }
         
         guard let index = mapProductIdToIndex[productId] else {
-            panelViewModel.errorMessage = "Error deleting product!"
+            LoggerConfig.shared.logCore(level: .error, "Error mapping product id to index(id = \(productId.uuidString))")
+            panelViewModel.errorMessage = "Something went wrong when deleting the product!"
             return
-            
         }
         
         do {
-            try await productService.deleteProduct(credentials: credentials, productId: productId)
+            try await productService.deleteProductById(credentials: credentials, productId: productId)
         } catch {
+            LoggerConfig.shared.logNetwork(level: .error, "Error deleting product \(error.localizedDescription)")
             panelViewModel.errorMessage = error.userMessage
             return
         }
         
         productNames.remove(products[index].name)
         products.remove(at: index)
-        mapProductIdToIndex = Dictionary(uniqueKeysWithValues: products.enumerated().map { (offset, product) in
-            (product.id, offset)
-        })
+        mapProductIdToIndex.removeValue(forKey: productId)
     }
 }

@@ -47,7 +47,10 @@ struct CategoriesView: View {
                     }
                     .contextMenu {
                         Button("Edit", systemImage: "pencil") {
-                            activeSheet = .editCategory(id: category.id, name: category.name)
+                            activeSheet = .editCategory(categoryId: category.id, categoryName: category.name)
+                        }
+                        Button("Delete", systemImage: "trash") {
+                            activeSheet = .deleteProduct(categoryId: category.id, categoryName: category.name)
                         }
                     }
                 }
@@ -60,11 +63,18 @@ struct CategoriesView: View {
                 AddCategoryView()
                     .environment(panelViewModel)
                     .environment(productsViewModel)
+                
             case .addProduct:
                 AddProductView()
                     .environment(productsViewModel)
-            case .editCategory(let id, let name):
-                EditCategoryView(id: id, name: name)
+                
+            case .editCategory(let categoryId, let categoryName):
+                EditCategoryView(id: categoryId, name: categoryName)
+                    .environment(panelViewModel)
+                    .environment(productsViewModel)
+                
+            case .deleteProduct(let categoryId, let categoryName ):
+                DeleteCategoryView(categoryId: categoryId, categoryName: categoryName)
                     .environment(panelViewModel)
                     .environment(productsViewModel)
             }
@@ -81,12 +91,14 @@ extension CategoriesView {
             switch self {
             case .addProduct: return "addProduct"
             case .addCategory: return "addCategory"
-            case .editCategory(let id, let name): return "\(id.uuidString)-\(name)"
+            case .editCategory(_, _): return "editCategory"
+            case .deleteProduct(_, _): return "deleteProduct"
             }
         }
         case addProduct
         case addCategory
-        case editCategory(id: UUID, name: String)
+        case editCategory(categoryId: UUID, categoryName: String)
+        case deleteProduct(categoryId: UUID, categoryName: String)
     }
 }
 

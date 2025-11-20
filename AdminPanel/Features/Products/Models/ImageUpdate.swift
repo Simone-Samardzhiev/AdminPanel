@@ -7,7 +7,8 @@
 
 import Foundation
 
-/// Struct holding response information from the API when replacing an image.
+/// Represents the API response returned after successfully replacing
+/// an image on the server.
 struct ImageUpdate: Decodable {
     let url: String
 }

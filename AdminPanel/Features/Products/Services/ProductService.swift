@@ -32,13 +32,19 @@ protocol ProductServiceProtocol {
     ///   - credentials: Credentials used to authenticate.
     ///   - category: The category name.
     /// - Returns: The created category.
-    func addCategory(credentials: Credentials, category: AddCategory) async throws(HTTPError) -> ProductCategory
+    func addCategory(credentials: Credentials, category: AddProductCategory) async throws(HTTPError) -> ProductCategory
     
     /// Updates an existing category.
     /// - Parameters:
     ///   - credentials: Credentials used to authenticate.
     ///   - categoryUpdate: The category new properties.
     func updateCategory(credentials: Credentials, categoryUpdate: CategoryUpdate) async throws(HTTPError)
+    
+    /// Deletes a category by id.
+    /// - Parameters:
+    ///   - credentials: Credentials used to authenticate.
+    ///   - categoryId: The id of the category to be deleted.
+    func deleteCategory(credentials: Credentials, categoryId: UUID) async throws(HTTPError)
     
     /// Adds a new product.
     /// - Parameters:
@@ -67,13 +73,13 @@ protocol ProductServiceProtocol {
     /// - Parameters:
     ///   - credentials: Credentials used to authenticate..
     ///   - productId: The id of the product to delete.
-    func deleteProduct(credentials: Credentials, productId: UUID) async throws(HTTPError)
+    func deleteProductById(credentials: Credentials, productId: UUID) async throws(HTTPError)
     
     /// Deletes all products with specified category id.
     /// - Parameters:
     ///   - credentials: Credentials used to authenticate..
     ///   - categoryId: The category id.
-    func deleteProduct(credentials: Credentials, categoryId: UUID) async throws (HTTPError)
+    func deleteProductByCategoryId(credentials: Credentials, categoryId: UUID) async throws (HTTPError)
 }
 
 /// Default `ProductServiceProtocol` implementation using `URLSession` and JSON coders.
@@ -94,7 +100,18 @@ final class ProductService {
     }
 }
 
+private extension ProductService {
+    private static func encodeCredentials(_ credentials: Credentials) -> String {
+        let basicCredentials = "\(credentials.username):\(credentials.password)"
+        let credentialsData = Data(basicCredentials.utf8)
+    
+        return "Basic \(credentialsData.base64EncodedString())"
+    }
+}
+
 extension ProductService: ProductServiceProtocol {
+
+    
     /// Issues a GET request to `/public/product-categories` and decodes the response.
     func getProductCategories() async throws(HTTPError) -> [ProductCategory] {
         let url = APIClient.shared.url
@@ -123,7 +140,7 @@ extension ProductService: ProductServiceProtocol {
         do {
             return try jsonDecoder.decode([ProductCategory].self, from: data)
         } catch {
-            throw .invalidResponse
+            throw .responseBodyDecodingFailed(error)
         }
     }
     
@@ -195,18 +212,14 @@ extension ProductService: ProductServiceProtocol {
     }
     
     /// Issues a POST request to `admin/categories` and decodes the response
-    func addCategory(credentials: Credentials, category: AddCategory) async throws(HTTPError) -> ProductCategory {
-        let basicCredentials = "\(credentials.username):\(credentials.password)"
-        let credentialsData = Data(basicCredentials.utf8)
-        let base64Credentials = credentialsData.base64EncodedString()
-        
+    func addCategory(credentials: Credentials, category: AddProductCategory) async throws(HTTPError) -> ProductCategory {
         let url = APIClient.shared.url
             .appending(path: "admin")
             .appending(path: "categories")
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+        request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         do {
@@ -241,10 +254,6 @@ extension ProductService: ProductServiceProtocol {
     
     /// Issues a PATCH request to `admin/categories/{id}` and checks the status code.
     func updateCategory(credentials: Credentials, categoryUpdate: CategoryUpdate) async throws(HTTPError) {
-        let basicCredentials = "\(credentials.username):\(credentials.password)"
-        let credentialsData = Data(basicCredentials.utf8)
-        let base64Credentials = credentialsData.base64EncodedString()
-        
         let url = APIClient.shared.url
             .appending(path: "admin")
             .appending(path: "categories")
@@ -252,7 +261,7 @@ extension ProductService: ProductServiceProtocol {
         
         var request = URLRequest(url: url)
         request.httpMethod = "PATCH"
-        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+        request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         do {
@@ -276,20 +285,44 @@ extension ProductService: ProductServiceProtocol {
             throw .invalidStatusCode(httpResponse.statusCode)
         }
     }
+    
+    /// Issues a DELETE request to `admin/categories/{id}` and checks the status code.
+    func deleteCategory(credentials: Credentials, categoryId: UUID) async throws(HTTPError) {
+        let url = APIClient.shared.url
+            .appending(path: "admin")
+            .appending(path: "categories")
+            .appending(path: categoryId.uuidString)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
+
+        
+        let response: URLResponse
+        do {
+            (_, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw .requestFailed(error)
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw .invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw .invalidStatusCode(httpResponse.statusCode)
+        }
+    }
 
     /// Issues a POST request to `/admin/products` and decodes the response.
     func addProduct(credentials: Credentials, product: AddProduct) async throws(HTTPError) -> Product {
-        let basicCredentials = "\(credentials.username):\(credentials.password)"
-        let credentialsData = Data(basicCredentials.utf8)
-        let base64Credentials = credentialsData.base64EncodedString()
-        
         let url = APIClient.shared.url
             .appending(path: "admin")
             .appending(path: "products")
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+        request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         do {
@@ -324,10 +357,6 @@ extension ProductService: ProductServiceProtocol {
 
     /// Issues a PATCH request to `/admin/products/{id}` and checks the status code.
     func updateProduct(credentials: Credentials, productUpdate: ProductUpdate) async throws(HTTPError) {
-        let basicCredentials = "\(credentials.username):\(credentials.password)"
-        let credentialsData = Data(basicCredentials.utf8)
-        let base64Credentials = credentialsData.base64EncodedString()
-        
         let url = APIClient.shared.url
             .appending(path: "admin")
             .appending(path: "products")
@@ -336,7 +365,7 @@ extension ProductService: ProductServiceProtocol {
         
         var request = URLRequest(url: url)
         request.httpMethod = "PATCH"
-        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+        request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         do {
@@ -364,10 +393,6 @@ extension ProductService: ProductServiceProtocol {
     
     /// Issues a PUT request to `/admin/products/{id}/image` and returns the new image data..
     func updateImage(credentials: Credentials, productId: UUID, image: Data) async throws(HTTPError) -> ImageUpdate {
-        let basicCredentials = "\(credentials.username):\(credentials.password)"
-        let credentialsData = Data(basicCredentials.utf8)
-        let base64Credentials = credentialsData.base64EncodedString()
-        
         let url = APIClient.shared.url
             .appending(path: "admin")
             .appending(path: "products")
@@ -377,7 +402,7 @@ extension ProductService: ProductServiceProtocol {
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.httpBody = image
-        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+        request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         
         let data: Data
         let response: URLResponse
@@ -404,12 +429,8 @@ extension ProductService: ProductServiceProtocol {
     }
     
     /// Issues a DELETE request to `/admin/products?product_id=...` and checks the status code.
-    func deleteProduct(credentials: Credentials, productId: UUID) async throws(HTTPError) {
-        let basicCredentials = "\(credentials.username):\(credentials.password)"
-        let credentialsData = Data(basicCredentials.utf8)
-        let base64Credentials = credentialsData.base64EncodedString()
-        
-        let url = APIClient.shared.url
+    func deleteProductById(credentials: Credentials, productId: UUID) async throws(HTTPError) {
+         let url = APIClient.shared.url
             .appending(path: "admin")
             .appending(path: "products")
             .appending(queryItems: [
@@ -418,7 +439,7 @@ extension ProductService: ProductServiceProtocol {
         
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
-        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+        request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
 
         let response: URLResponse
         
@@ -438,11 +459,7 @@ extension ProductService: ProductServiceProtocol {
     }
     
     /// Issues a DELETE request to `/admin/products?category_id=...` and checks the status code.
-    func deleteProduct(credentials: Credentials, categoryId: UUID) async throws (HTTPError) {
-        let basicCredentials = "\(credentials.username):\(credentials.password)"
-        let credentialsData = Data(basicCredentials.utf8)
-        let base64Credentials = credentialsData.base64EncodedString()
-        
+    func deleteProductByCategoryId(credentials: Credentials, categoryId: UUID) async throws (HTTPError) {
         let url = APIClient.shared.url
             .appending(path: "admin")
             .appending(path: "products")
@@ -452,7 +469,7 @@ extension ProductService: ProductServiceProtocol {
         
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
-        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+        request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
 
         let response: URLResponse
         

@@ -8,9 +8,12 @@
 import Foundation
 
 
-/// Struct holding category updates info.
+/// Represents the payload required to update a product category.
+///
+/// Used when updating a product category via `ProductServiceProtocol`
 struct CategoryUpdate: Encodable {
     let id: UUID
+    
     let name: String?
     
     enum CodingKeys: String, CodingKey {

@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import SwiftUI
+import OSLog
 
 /// An observable view model that coordinates the login flow.
 ///
@@ -60,9 +60,7 @@ final class LoginViewModel {
             success = try await authenticationService.login(username: username, password: password)
         } catch {
             errorMessage = error.userMessage
-#if DEBUG
-            print("Error: \(error)")
-#endif
+            LoggerConfig.shared.logNetwork(level: .error, "Error logging in \(error.localizedDescription)")
             return
         }
         

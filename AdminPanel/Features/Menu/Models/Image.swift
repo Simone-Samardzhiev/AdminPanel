@@ -1,5 +1,5 @@
 //
-//  ImageUpdate.swift
+//  Image.swift
 //  AdminPanel
 //
 //  Created by Simone Samardzhiev on 16.11.25.

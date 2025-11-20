@@ -1,12 +1,25 @@
 //
-//  CategoryUpdate.swift
+//  ProductCategory.swift
 //  AdminPanel
 //
-//  Created by Simone Samardzhiev on 18.11.25.
+//  Created by Simone Samardzhiev on 10.11.25.
 //
 
 import Foundation
 
+
+/// Represents a product category returned by the API.
+struct ProductCategory: Codable, Hashable, Identifiable {
+    let id: UUID
+    let name: String
+}
+
+/// Represents the payload required to add a new product category.
+///
+/// Used when adding  a new product category via `ProductServiceProtocol`
+struct AddProductCategory: Encodable {
+    let name: String
+}
 
 /// Represents the payload required to update a product category.
 ///

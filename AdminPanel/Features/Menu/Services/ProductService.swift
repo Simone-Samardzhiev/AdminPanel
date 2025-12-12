@@ -100,14 +100,6 @@ final class ProductService {
     }
 }
 
-private extension ProductService {
-    private static func encodeCredentials(_ credentials: Credentials) -> String {
-        let basicCredentials = "\(credentials.username):\(credentials.password)"
-        let credentialsData = Data(basicCredentials.utf8)
-    
-        return "Basic \(credentialsData.base64EncodedString())"
-    }
-}
 
 extension ProductService: ProductServiceProtocol {
 
@@ -222,7 +214,7 @@ extension ProductService: ProductServiceProtocol {
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
+        request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
@@ -265,7 +257,7 @@ extension ProductService: ProductServiceProtocol {
         
         var request = URLRequest(url: url)
         request.httpMethod = "PATCH"
-        request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
+        request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
@@ -300,7 +292,7 @@ extension ProductService: ProductServiceProtocol {
         
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
-        request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
+        request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
         let response: URLResponse
@@ -327,7 +319,7 @@ extension ProductService: ProductServiceProtocol {
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
+        request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
@@ -371,7 +363,7 @@ extension ProductService: ProductServiceProtocol {
         
         var request = URLRequest(url: url)
         request.httpMethod = "PATCH"
-        request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
+        request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
@@ -409,7 +401,7 @@ extension ProductService: ProductServiceProtocol {
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.httpBody = image
-        request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
+        request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
         let data: Data
@@ -447,7 +439,7 @@ extension ProductService: ProductServiceProtocol {
         
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
-        request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
+        request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
 
         let response: URLResponse
@@ -478,7 +470,7 @@ extension ProductService: ProductServiceProtocol {
         
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
-        request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
+        request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
 
         let response: URLResponse

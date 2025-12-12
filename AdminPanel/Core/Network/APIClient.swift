@@ -42,5 +42,12 @@ struct APIClient {
         
         self.urlSession = URLSession(configuration: config)
     }
+    
+    static func encodeCredentials(_ credentials: Credentials) -> String {
+        let basicCredentials = "\(credentials.username):\(credentials.password)"
+        let credentialsData = Data(basicCredentials.utf8)
+    
+        return "Basic \(credentialsData.base64EncodedString())"
+    }
 }
 

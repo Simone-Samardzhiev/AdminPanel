@@ -42,7 +42,7 @@ extension AuthenticationService: AuthenticationServiceProtocol {
             .appending(path: "login")
         
         var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        request.httpMethod = "POST"
         request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
         
         let response: URLResponse

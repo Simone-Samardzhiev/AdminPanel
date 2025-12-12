@@ -120,11 +120,12 @@ extension ProductService: ProductServiceProtocol {
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
+        request.cachePolicy = .returnCacheDataElseLoad
         
         let data: Data
         let response: URLResponse
         do {
-            (data, response) = try await URLSession.shared.data(for: request)
+            (data, response) = try await APIClient.shared.urlSession.data(for: request)
         } catch {
             throw .requestFailed(error)
         }
@@ -152,11 +153,12 @@ extension ProductService: ProductServiceProtocol {
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
+        request.cachePolicy = .returnCacheDataElseLoad
         
         let data: Data
         let response: URLResponse
         do {
-            (data, response) = try await URLSession.shared.data(for: request)
+            (data, response) = try await APIClient.shared.urlSession.data(for: request)
         } catch {
             throw .requestFailed(error)
         }
@@ -187,11 +189,12 @@ extension ProductService: ProductServiceProtocol {
     
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
+        request.cachePolicy = .returnCacheDataElseLoad
         
         let data: Data
         let response: URLResponse
         do {
-            (data, response) = try await URLSession.shared.data(for: request)
+            (data, response) = try await APIClient.shared.urlSession.data(for: request)
         } catch {
             throw .requestFailed(error)
         }
@@ -221,6 +224,7 @@ extension ProductService: ProductServiceProtocol {
         request.httpMethod = "POST"
         request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
         do {
             request.httpBody = try jsonEncoder.encode(category)
@@ -232,7 +236,7 @@ extension ProductService: ProductServiceProtocol {
         let response: URLResponse
         
         do {
-            (data, response) = try await URLSession.shared.data(for: request)
+            (data, response) = try await APIClient.shared.urlSession.data(for: request)
         } catch {
             throw .requestFailed(error)
         }
@@ -263,6 +267,7 @@ extension ProductService: ProductServiceProtocol {
         request.httpMethod = "PATCH"
         request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
         do {
             request.httpBody = try jsonEncoder.encode(categoryUpdate)
@@ -272,7 +277,7 @@ extension ProductService: ProductServiceProtocol {
         
         let response: URLResponse
         do {
-            (_, response) = try await URLSession.shared.data(for: request)
+            (_, response) = try await APIClient.shared.urlSession.data(for: request)
         } catch {
             throw .requestFailed(error)
         }
@@ -296,11 +301,11 @@ extension ProductService: ProductServiceProtocol {
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
-
+        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
         let response: URLResponse
         do {
-            (_, response) = try await URLSession.shared.data(for: request)
+            (_, response) = try await APIClient.shared.urlSession.data(for: request)
         } catch {
             throw .requestFailed(error)
         }
@@ -324,6 +329,7 @@ extension ProductService: ProductServiceProtocol {
         request.httpMethod = "POST"
         request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
         do {
             request.httpBody = try jsonEncoder.encode(product)
@@ -335,7 +341,7 @@ extension ProductService: ProductServiceProtocol {
         let response: URLResponse
         
         do {
-            (data, response) = try await URLSession.shared.data(for: request)
+            (data, response) = try await APIClient.shared.urlSession.data(for: request)
         } catch {
             throw .requestFailed(error)
         }
@@ -367,6 +373,7 @@ extension ProductService: ProductServiceProtocol {
         request.httpMethod = "PATCH"
         request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
         do {
             request.httpBody = try jsonEncoder.encode(productUpdate)
@@ -377,7 +384,7 @@ extension ProductService: ProductServiceProtocol {
         let response: URLResponse
         
         do {
-            (_, response) = try await URLSession.shared.data(for: request)
+            (_, response) = try await APIClient.shared.urlSession.data(for: request)
         } catch {
             throw .requestFailed(error)
         }
@@ -403,12 +410,13 @@ extension ProductService: ProductServiceProtocol {
         request.httpMethod = "PUT"
         request.httpBody = image
         request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
+        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
         let data: Data
         let response: URLResponse
         
         do {
-            (data, response) = try await URLSession.shared.data(for: request)
+            (data, response) = try await APIClient.shared.urlSession.data(for: request)
         } catch {
             throw .requestFailed(error)
         }
@@ -440,11 +448,12 @@ extension ProductService: ProductServiceProtocol {
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
+        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
 
         let response: URLResponse
         
         do {
-            (_, response) = try await URLSession.shared.data(for: request)
+            (_, response) = try await APIClient.shared.urlSession.data(for: request)
         } catch {
             throw .requestFailed(error)
         }
@@ -470,11 +479,12 @@ extension ProductService: ProductServiceProtocol {
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         request.setValue(Self.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
+        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
 
         let response: URLResponse
         
         do {
-            (_, response) = try await URLSession.shared.data(for: request)
+            (_, response) = try await APIClient.shared.urlSession.data(for: request)
         } catch {
             throw .requestFailed(error)
         }

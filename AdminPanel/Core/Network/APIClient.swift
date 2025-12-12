@@ -15,6 +15,10 @@ import Foundation
 struct APIClient {
     /// The base URL for all API endpoints.
     let url: URL
+    
+    /// The default url session.
+    let urlSession: URLSession
+    
     /// Shared instance pointing at the local development server.
     static let shared = Self(url: "http://127.0.0.1:8080/api/v1")
     
@@ -25,6 +29,18 @@ struct APIClient {
             fatalError("Invalid URL: \(url)")
         }
         self.url = parsedURL
+        
+        let cache = URLCache(
+            memoryCapacity: 50 * 1024 * 1024,
+            diskCapacity: 50 * 1024 * 1024
+        )
+        
+        let config = URLSessionConfiguration.default
+        config.urlCache = cache
+        config.requestCachePolicy = .useProtocolCachePolicy
+        config.httpShouldSetCookies = true
+        
+        self.urlSession = URLSession(configuration: config)
     }
 }
 

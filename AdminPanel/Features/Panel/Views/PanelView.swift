@@ -38,6 +38,9 @@ struct PanelView: View {
                     )
                     .environment(panelViewModel)
                 }
+                NavigationLink("Orders") {
+                    
+                }
             }
             .listStyle(.sidebar)
             .navigationTitle("Admin Panel")

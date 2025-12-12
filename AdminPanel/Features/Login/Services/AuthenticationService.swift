@@ -44,11 +44,12 @@ extension AuthenticationService: AuthenticationServiceProtocol {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+        request.cachePolicy = .reloadIgnoringLocalCacheData
         
         let response: URLResponse
         
         do {
-            (_, response) = try await URLSession.shared.data(for: request)
+            (_, response) = try await APIClient.shared.urlSession.data(for: request)
         } catch {
             throw HTTPError.requestFailed(error)
         }

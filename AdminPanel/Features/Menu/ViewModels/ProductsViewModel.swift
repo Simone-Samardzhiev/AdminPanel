@@ -6,7 +6,7 @@
 //
 
 import Foundation
-internal import os
+import os
 
 /// View model responsible for loading product categories and products,
 /// caching results per category, and coordinating loading state with `PanelViewModel`.

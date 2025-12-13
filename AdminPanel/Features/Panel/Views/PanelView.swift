@@ -32,19 +32,34 @@ struct PanelView: View {
                     CategoriesView(
                         credentials: credentials,
                         productService: ProductService(
-                            jsonEncoder: JSONEncoder(),
-                            jsonDecoder: JSONDecoder()
+                            jsonEncoder: .init(),
+                            jsonDecoder: .init()
                         )
                     )
                     .environment(panelViewModel)
                 }
                 NavigationLink("Orders") {
-                    
+                    List {
+                        NavigationLink("Order sessions") {
+                            OrderSessionsView(
+                                credentials: credentials,
+                                orderService: OrderService(
+                                    jsonEncoder: .init(),
+                                    jsonDecoder: .init()
+                                )
+                            )
+                            .environment(panelViewModel)
+                        }
+                    }
+                    .listStyle(.sidebar)
                 }
             }
             .listStyle(.sidebar)
             .navigationTitle("Admin Panel")
-            .alert("Error", isPresented: .constant(panelViewModel.errorMessage != nil)) {
+            .alert(
+                "Error",
+                isPresented: .constant(panelViewModel.errorMessage != nil)
+            ) {
                 Button(role: .close) {
                     panelViewModel.errorMessage = nil
                 }
@@ -62,7 +77,10 @@ struct PanelView: View {
                     ProgressView()
                         .progressViewStyle(.circular)
                         .scaleEffect(0.5)
-                        .animation(.easeInOut(duration: 0.2), value: panelViewModel.isLoading)
+                        .animation(
+                            .easeInOut(duration: 0.2),
+                            value: panelViewModel.isLoading
+                        )
                 }
             }
         }

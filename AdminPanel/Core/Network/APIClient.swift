@@ -19,7 +19,7 @@ struct APIClient {
     /// The default url session.
     let urlSession: URLSession
     
-    /// Shared instance pointing at the local development server.
+    /// Shared instance.
     static let shared = Self(url: "http://127.0.0.1:8080/api/v1")
     
     /// Creates a new client from a base URL string.
@@ -32,7 +32,7 @@ struct APIClient {
         
         let cache = URLCache(
             memoryCapacity: 50 * 1024 * 1024,
-            diskCapacity: 50 * 1024 * 1024
+            diskCapacity: 0
         )
         
         let config = URLSessionConfiguration.default

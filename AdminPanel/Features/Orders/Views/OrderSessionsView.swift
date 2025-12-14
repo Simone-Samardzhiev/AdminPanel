@@ -22,10 +22,12 @@ struct OrderSessionsView: View {
     /// - Parameters:
     ///   - credentials: Credentials used to authenticate.
     ///   - orderService: Service used to make API requests.
-    init(credentials: Credentials, orderService: OrderServiceProtocol) {
+    ///   - qrCodeGenerator: Generator used to create QR codes for order sessions.
+    init(credentials: Credentials, orderService: OrderServiceProtocol, qrCodeGenerator: QRCodeGeneratorProtocol) {
         self.orderViewModel = .init(
             orderService: orderService,
-            credentials: credentials
+            credentials: credentials,
+            qrCodeGenerator: qrCodeGenerator
         )
     }
 
@@ -34,6 +36,7 @@ struct OrderSessionsView: View {
             LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(orderViewModel.orderSessions) { session in
                     OrderSessionCard(session)
+                        .environment(orderViewModel)
                 }
             }
             .padding()
@@ -70,7 +73,12 @@ extension OrderSessionsView {
     
     /// Card displaying the order session.
     private struct OrderSessionCard: View {
+        @Environment(OrderViewModel.self) var orderViewModel
+        
+        @Environment(PanelViewModel.self) var panelViewModel
+        
         let session: OrderSession
+        
         @State private var isHovered: Bool
         
         init(_ session: OrderSession) {
@@ -91,6 +99,11 @@ extension OrderSessionsView {
             .animation(.spring(response: 0.35, dampingFraction: 0.75), value: isHovered)
             .onHover { hovering in
                 isHovered = hovering
+            }
+            .contextMenu {
+                Button("Generate QR code", systemImage: "qrcode") {
+                    orderViewModel.generatePDF(orderSession: session, panelViewModel: panelViewModel)
+                }
             }
         }
 

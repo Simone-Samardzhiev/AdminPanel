@@ -45,8 +45,9 @@ struct PanelView: View {
                                 credentials: credentials,
                                 orderService: OrderService(
                                     jsonEncoder: .init(),
-                                    jsonDecoder: .init()
-                                )
+                                    jsonDecoder: .init(),
+                                ),
+                                qrCodeGenerator: QRCodeGenerator()
                             )
                             .environment(panelViewModel)
                         }

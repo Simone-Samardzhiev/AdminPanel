@@ -119,7 +119,7 @@ extension QRCodeGenerator {
 
         // Margins and layout
         let margin: CGFloat = 40
-        let titleFont = NSFont.systemFont(ofSize: 24, weight: .semibold)
+        let titleFont = NSFont.systemFont(ofSize: 20, weight: .semibold)
 
         // Draw title using Core Text via NSAttributedString -> draw in flipped context
         let paragraph = NSMutableParagraphStyle()

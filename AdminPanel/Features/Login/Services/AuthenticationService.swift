@@ -44,7 +44,6 @@ extension AuthenticationService: AuthenticationServiceProtocol {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
-        request.cachePolicy = .reloadIgnoringLocalCacheData
         
         let response: URLResponse
         

@@ -48,6 +48,10 @@ final class OrderViewModel {
         }
     }
     
+    /// Function that will generate a PDF file for a specific order session.
+    /// - Parameters:
+    ///   - orderSession: The order session for the PDF file.
+    ///   - panelViewModel: ViewModel to report any errors.
     func generatePDF(orderSession: OrderSession, panelViewModel: PanelViewModel) {
         let sessionIdString = orderSession.id.uuidString
         
@@ -83,5 +87,30 @@ final class OrderViewModel {
                 }
             }
         }
+    }
+    
+    /// Function to create a new order session
+    /// - Parameter panelViewModel: ViewModel to report any errors.
+    func createOrderSession(panelViewModel: PanelViewModel) async {
+        do {
+            let session = try await orderService.createSession(credentials: credentials)
+            orderSessions.append(session)
+        } catch {
+            panelViewModel.errorMessage = error.userMessage
+        }
+    }
+    
+    /// Function to delete a session by id.
+    /// - Parameters:
+    ///   - id: The id of the session.
+    ///   - panelViewModel: ViewModel to report any errors.
+    func deleteOrderSession(id: UUID, panelViewModel: PanelViewModel) async {
+        do {
+            try await orderService.deleteSession(credentials: credentials, id: id)
+        } catch {
+            panelViewModel.errorMessage = error.userMessage
+        }
+        
+        orderSessions.removeAll { $0.id == id }
     }
 }

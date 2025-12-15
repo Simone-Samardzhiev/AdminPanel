@@ -16,7 +16,6 @@ struct APIClient {
     /// The base URL for all API endpoints.
     let url: URL
     
-    /// The default url session.
     let urlSession: URLSession
     
     /// Shared instance.
@@ -29,18 +28,7 @@ struct APIClient {
             fatalError("Invalid URL: \(url)")
         }
         self.url = parsedURL
-        
-        let cache = URLCache(
-            memoryCapacity: 50 * 1024 * 1024,
-            diskCapacity: 0
-        )
-        
-        let config = URLSessionConfiguration.default
-        config.urlCache = cache
-        config.requestCachePolicy = .useProtocolCachePolicy
-        config.httpShouldSetCookies = true
-        
-        self.urlSession = URLSession(configuration: config)
+        self.urlSession = URLSession(configuration: .default)
     }
     
     static func encodeCredentials(_ credentials: Credentials) -> String {

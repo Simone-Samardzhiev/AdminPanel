@@ -39,20 +39,14 @@ struct PanelView: View {
                     .environment(panelViewModel)
                 }
                 NavigationLink("Orders") {
-                    List {
-                        NavigationLink("Order sessions") {
-                            OrderSessionsView(
-                                credentials: credentials,
-                                orderService: OrderService(
-                                    jsonEncoder: .init(),
-                                    jsonDecoder: .init(),
-                                ),
-                                qrCodeGenerator: QRCodeGenerator()
-                            )
-                            .environment(panelViewModel)
-                        }
-                    }
-                    .listStyle(.sidebar)
+                    OrdersView(
+                        credentials: credentials,
+                        orderService: OrderService(
+                            jsonEncoder: .init(),
+                            jsonDecoder: .init()),
+                        qrCodeGenerator: QRCodeGenerator()
+                    )
+                    .environment(panelViewModel)
                 }
             }
             .listStyle(.sidebar)

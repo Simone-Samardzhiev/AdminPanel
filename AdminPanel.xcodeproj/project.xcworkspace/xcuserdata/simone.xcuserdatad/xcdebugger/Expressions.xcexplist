@@ -3,9 +3,6 @@
    version = "1.0">
    <ContextStates>
       <ContextState
-         contextName = "ProductsViewModel.updateProduct(_:):ProductsViewModel.swift">
-      </ContextState>
-      <ContextState
          contextName = "ProductService.updateCategory(credentials:categoryUpdate:):ProductService.swift">
          <PersistentStrings>
             <PersistentString
@@ -14,12 +11,18 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
+         contextName = "ProductsViewModel.updateProduct(_:):ProductsViewModel.swift">
+      </ContextState>
+      <ContextState
          contextName = "ProductService.updateProduct(credentials:updateProduct:):ProductService.swift">
          <PersistentStrings>
             <PersistentString
                value = "httpResponse.statusCode">
             </PersistentString>
          </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "OrderService.getOrderSessions(credentials:):OrderService.swift">
       </ContextState>
       <ContextState
          contextName = "ProductsView.onCompletionImportFile(productId:result:):ProductsView.swift">

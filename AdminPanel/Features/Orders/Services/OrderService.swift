@@ -14,6 +14,18 @@ protocol OrderServiceProtocol {
     /// - Returns: Array of order sessions.
     /// - Throws: `HTTPError` if the request or decoding of the body fails.
     func getOrderSessions(credentials: Credentials) async throws(HTTPError) -> [OrderSession]
+    
+    /// Creates a new order session.
+    /// - Parameter credentials: Credentials used to authenticate.
+    /// - Returns: The newly created session.
+    func createSession(credentials: Credentials) async throws(HTTPError) -> OrderSession
+    
+    
+    /// Deletes a order session by id.
+    /// - Parameters:
+    ///   - credentials: Credentials used to authenticate.
+    ///   - id: The id of the session.
+    func deleteSession(credentials: Credentials, id: UUID) async throws(HTTPError)
 }
 
 /// Default `OrderServiceProtocol` implementation using JSON and `URLSession`.
@@ -42,7 +54,6 @@ extension OrderService {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
-        request.cachePolicy = .returnCacheDataElseLoad
         
         let data: Data
         let response: URLResponse
@@ -65,6 +76,70 @@ extension OrderService {
             return try jsonDecoder.decode([OrderSession].self, from: data)
         } catch {
             throw .responseBodyDecodingFailed(error)
+        }
+    }
+    
+    /// Issues a POST request to `/admin/orders/sessions` and decodes the response.
+    func createSession(credentials: Credentials) async throws(HTTPError) -> OrderSession {
+        let url = APIClient.shared.url
+            .appending(path: "admin")
+            .appending(path: "orders")
+            .appending(path: "sessions")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
+        
+        let data: Data
+        let response: URLResponse
+        
+        do {
+            (data, response) = try await APIClient.shared.urlSession.data(for: request)
+        } catch {
+            throw .requestFailed(error)
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw .invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw .invalidStatusCode(httpResponse.statusCode)
+        }
+        
+        do {
+            return try jsonDecoder.decode(OrderSession.self, from: data)
+        } catch {
+            throw .responseBodyDecodingFailed(error)
+        }
+    }
+    
+    /// Issues a DELETE request to `/admin/orders/sessions/{id}` and decodes the response.
+    func deleteSession(credentials: Credentials, id: UUID) async throws(HTTPError) {
+        let url = APIClient.shared.url
+            .appending(path: "admin")
+            .appending(path: "orders")
+            .appending(path: "sessions")
+            .appending(path: id.uuidString)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
+        
+        let response: URLResponse
+        
+        do {
+            (_, response) = try await APIClient.shared.urlSession.data(for: request)
+        } catch {
+            throw .requestFailed(error)
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw .invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw .invalidStatusCode(httpResponse.statusCode)
         }
     }
 }

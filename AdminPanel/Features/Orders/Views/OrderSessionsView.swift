@@ -9,7 +9,7 @@ import SwiftUI
 
 /// View displaying order sessions.
 struct OrderSessionsView: View {
-    @State var orderViewModel: OrderViewModel
+    @Environment( OrderViewModel.self) var orderViewModel
     @Environment(PanelViewModel.self) var panelViewModel
     
     /// Columns for the `LazyVGrid`
@@ -18,19 +18,6 @@ struct OrderSessionsView: View {
         GridItem(.flexible(minimum: 220), spacing: 16)
     ]
     
-    /// Default initializer.
-    /// - Parameters:
-    ///   - credentials: Credentials used to authenticate.
-    ///   - orderService: Service used to make API requests.
-    ///   - qrCodeGenerator: Generator used to create QR codes for order sessions.
-    init(credentials: Credentials, orderService: OrderServiceProtocol, qrCodeGenerator: QRCodeGeneratorProtocol) {
-        self.orderViewModel = .init(
-            orderService: orderService,
-            credentials: credentials,
-            qrCodeGenerator: qrCodeGenerator
-        )
-    }
-
     var body: some View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 16) {
@@ -51,7 +38,7 @@ extension OrderSessionsView {
     /// StatusBadge displays status of the order.
     private struct StatusBadge: View {
         let status: OrderSession.Status
-
+        
         var body: some View {
             Text(status.rawValue.uppercased())
                 .font(.caption.weight(.semibold))
@@ -61,7 +48,7 @@ extension OrderSessionsView {
                 .foregroundStyle(statusColor)
                 .clipShape(Capsule())
         }
-
+        
         private var statusColor: Color {
             switch status {
             case .open: .green
@@ -85,7 +72,7 @@ extension OrderSessionsView {
             self.session = session
             self.isHovered = false
         }
-
+        
         var body: some View {
             VStack(alignment: .leading, spacing: 12) {
                 header
@@ -104,20 +91,25 @@ extension OrderSessionsView {
                 Button("Generate QR code", systemImage: "qrcode") {
                     orderViewModel.generatePDF(orderSession: session, panelViewModel: panelViewModel)
                 }
+                Button("Delete", systemImage: "trash") {
+                    Task {
+                        await orderViewModel.deleteOrderSession(id: session.id, panelViewModel: panelViewModel)
+                    }
+                }
             }
         }
-
+        
         private var header: some View {
             HStack {
                 Text("Session")
                     .font(.headline)
-
+                
                 Spacer()
-
+                
                 StatusBadge(status: session.status)
             }
         }
-
+        
         private var details: some View {
             VStack(alignment: .leading, spacing: 6) {
                 Label(
@@ -125,14 +117,14 @@ extension OrderSessionsView {
                     systemImage: "table.furniture"
                 )
                 .font(.subheadline)
-
+                
                 Text(session.id.uuidString)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
         }
-
+        
         private var background: some View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color(.windowBackgroundColor))

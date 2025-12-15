@@ -198,8 +198,6 @@ extension ProductsView {
             }
         }
     }
-
-    
     
     /// A card-like row presenting a product's image and details.
     private struct ProductCard: View {

@@ -112,7 +112,6 @@ extension ProductService: ProductServiceProtocol {
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.cachePolicy = .returnCacheDataElseLoad
         
         let data: Data
         let response: URLResponse
@@ -145,7 +144,6 @@ extension ProductService: ProductServiceProtocol {
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.cachePolicy = .returnCacheDataElseLoad
         
         let data: Data
         let response: URLResponse
@@ -181,7 +179,6 @@ extension ProductService: ProductServiceProtocol {
     
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.cachePolicy = .returnCacheDataElseLoad
         
         let data: Data
         let response: URLResponse
@@ -216,7 +213,6 @@ extension ProductService: ProductServiceProtocol {
         request.httpMethod = "POST"
         request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
         do {
             request.httpBody = try jsonEncoder.encode(category)
@@ -259,7 +255,6 @@ extension ProductService: ProductServiceProtocol {
         request.httpMethod = "PATCH"
         request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
         do {
             request.httpBody = try jsonEncoder.encode(categoryUpdate)
@@ -293,7 +288,6 @@ extension ProductService: ProductServiceProtocol {
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
-        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
         let response: URLResponse
         do {
@@ -321,7 +315,6 @@ extension ProductService: ProductServiceProtocol {
         request.httpMethod = "POST"
         request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
         do {
             request.httpBody = try jsonEncoder.encode(product)
@@ -365,7 +358,6 @@ extension ProductService: ProductServiceProtocol {
         request.httpMethod = "PATCH"
         request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
         do {
             request.httpBody = try jsonEncoder.encode(productUpdate)
@@ -402,7 +394,6 @@ extension ProductService: ProductServiceProtocol {
         request.httpMethod = "PUT"
         request.httpBody = image
         request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
-        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
         let data: Data
         let response: URLResponse
@@ -440,7 +431,6 @@ extension ProductService: ProductServiceProtocol {
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
-        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
 
         let response: URLResponse
         
@@ -471,7 +461,6 @@ extension ProductService: ProductServiceProtocol {
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
-        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
 
         let response: URLResponse
         

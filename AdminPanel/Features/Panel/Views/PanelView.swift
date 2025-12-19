@@ -60,6 +60,7 @@ struct PanelView: View {
                 }
                 NavigationLink("Orders") {
                     OrdersView()
+                        .environment(productViewModel)
                         .environment(ordersViewModel)
                         .environment(panelViewModel)
                 }
@@ -91,6 +92,9 @@ struct PanelView: View {
         }
         .task {
             do {
+                panelViewModel.isLoading = true
+                defer { panelViewModel.isLoading = false }
+                
                 try await productViewModel.loadData()
                 try await ordersViewModel.loadData()
             } catch let error as UserRepresentableError {

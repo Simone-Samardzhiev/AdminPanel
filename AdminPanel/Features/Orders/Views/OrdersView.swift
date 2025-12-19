@@ -10,6 +10,9 @@ import SwiftUI
 /// View displaying order sessions and order products.
 struct OrdersView: View {
     @Environment(PanelViewModel.self) var panelViewModel
+    
+    @Environment(ProductsViewModel.self) var productsViewModel
+    
     @Environment(OrdersViewModel.self) var ordersViewModel
     
     var body: some View {
@@ -37,6 +40,7 @@ struct OrdersView: View {
                 NavigationLink("Ordered products") {
                     OrderedProductsView()
                         .environment(panelViewModel)
+                        .environment(productsViewModel)
                         .environment(ordersViewModel)
                 }
             }

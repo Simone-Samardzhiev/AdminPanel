@@ -14,15 +14,17 @@ import UniformTypeIdentifiers
 @MainActor
 final class OrdersViewModel {
     /// Service used to API operations.
-    @ObservationIgnored let orderService: OrderServiceProtocol
+    @ObservationIgnored private let orderService: OrderServiceProtocol
     /// Credentials used to authenticate.
-    @ObservationIgnored let credentials: Credentials
+    @ObservationIgnored private  let credentials: Credentials
     
     /// QR code generator used to generate QR codes for sessions.
-    @ObservationIgnored let qrCodeGenerator: QRCodeGeneratorProtocol
+    @ObservationIgnored private let qrCodeGenerator: QRCodeGeneratorProtocol
     
     /// Array holding all order sessions.
     var orderSessions: [OrderSession]
+    
+    @ObservationIgnored private  var mapOrderSessionIdToIndex: [UUID: Int]
     
     /// Array holding the ordered products
     var orderedProducts: [OrderedProduct]
@@ -37,6 +39,7 @@ final class OrdersViewModel {
         self.orderService = orderService
         self.qrCodeGenerator = qrCodeGenerator
         self.orderSessions = []
+        self.mapOrderSessionIdToIndex = [:]
         self.orderedProducts = []
     }
     
@@ -44,6 +47,14 @@ final class OrdersViewModel {
     func loadData() async throws(HTTPError) {
         self.orderSessions = try await orderService.getOrderSessions(credentials: credentials)
         self.orderedProducts = try await orderService.getOrderedProducts(credentials: credentials)
+        // loadHelperData()
+    }
+    
+    func loadHelperData() {
+        mapOrderSessionIdToIndex.reserveCapacity(orderSessions.count)
+        for (index, session) in orderSessions.enumerated() {
+            mapOrderSessionIdToIndex[session.id] = index
+        }
     }
     
     /// Function that will generate a PDF file for a specific order session.
@@ -96,6 +107,7 @@ final class OrdersViewModel {
         do {
             let session = try await orderService.createSession(credentials: credentials)
             orderSessions.append(session)
+            mapOrderSessionIdToIndex[session.id] = (orderSessions.count - 1)
         } catch {
             throw .network(error)
         }
@@ -107,17 +119,30 @@ final class OrdersViewModel {
     func deleteOrderSession(id: UUID) async throws(CategoryError) {
         do {
             try await orderService.deleteSession(credentials: credentials, id: id)
+        
+            orderSessions.removeAll { $0.id == id }
+            mapOrderSessionIdToIndex.removeValue(forKey: id)
         } catch {
             throw .network(error)
         }
+
+    }
+    
+    /// Gets an order session id.
+    /// - Parameter id: The id of the session.
+    /// - Returns: The session with corresponding id.
+    func getOrderSessionById(_ id: UUID) -> OrderSession? {
+        guard let index = mapOrderSessionIdToIndex[id] else {
+            return nil
+        }
         
-        orderSessions.removeAll { $0.id == id }
+        return orderSessions[index]
     }
     
     /// Function that filters ordered products by status.
     /// - Parameter status: The status used for filtering.
     /// - Returns: The filtered ordered products.
-    func orderedProductsByStatus(status: OrderedProduct.Status) -> [OrderedProduct] {
+    func orderedProductsByStatus(_ status: OrderedProduct.Status) -> [OrderedProduct] {
         return orderedProducts.filter { $0.status == status }
     }
 }

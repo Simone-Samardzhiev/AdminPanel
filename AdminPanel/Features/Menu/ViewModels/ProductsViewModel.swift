@@ -84,7 +84,6 @@ final class ProductsViewModel {
     
     /// Adds a new category.
     /// - Parameter categoryName: The name of the new category.
-    /// - Throws: `CategoryError`
     func addCategory(categoryName: String) async throws(CategoryError)  {
         guard categoryName.count >= 4 && categoryName.count <= 100 else {
             throw.invalidName
@@ -261,5 +260,16 @@ final class ProductsViewModel {
         productNames.remove(products[index].name)
         products.remove(at: index)
         mapProductIdToIndex.removeValue(forKey: productId)
+    }
+    
+    /// Gets a product by id.
+    /// - Parameter id: The id of the product.
+    /// - Returns: The product with corresponding id.
+    func getProductById(_ id: UUID) -> Product? {
+        guard let index = mapProductIdToIndex[id] else {
+            return nil
+        }
+        
+        return products[index]
     }
 }

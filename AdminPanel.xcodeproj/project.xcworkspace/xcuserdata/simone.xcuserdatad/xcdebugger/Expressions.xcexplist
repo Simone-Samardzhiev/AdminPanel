@@ -3,14 +3,6 @@
    version = "1.0">
    <ContextStates>
       <ContextState
-         contextName = "ProductService.updateCategory(credentials:categoryUpdate:):ProductService.swift">
-         <PersistentStrings>
-            <PersistentString
-               value = "httpResponse.statusCode">
-            </PersistentString>
-         </PersistentStrings>
-      </ContextState>
-      <ContextState
          contextName = "ProductsViewModel.updateProduct(_:):ProductsViewModel.swift">
       </ContextState>
       <ContextState

@@ -19,7 +19,7 @@ struct APIClient {
     let urlSession: URLSession
     
     /// Shared instance.
-    static let shared = Self(url: "http://127.0.0.1:8080/api/v1")
+    static let shared = Self(url: "http://192.168.1.8:8080/api/v1")
     
     /// Creates a new client from a base URL string.
     /// - Parameter url: The base URL string. Triggers a runtime `fatalError` if invalid.

@@ -9,29 +9,21 @@ import SwiftUI
 
 /// View displaying order sessions and order products.
 struct OrdersView: View {
-    @State var orderViewModel: OrderViewModel
-    
     @Environment(PanelViewModel.self) var panelViewModel
-
-    /// Default initializer.
-    /// - Parameters:
-    ///   - credentials: Credentials used to authenticate.
-    ///   - orderService: Service used to make API requests.
-    ///   - qrCodeGenerator: Generator used to create QR codes for order sessions.
-    init(credentials: Credentials, orderService: OrderServiceProtocol, qrCodeGenerator: QRCodeGeneratorProtocol) {
-        self.orderViewModel = .init(
-            orderService: orderService,
-            credentials: credentials,
-            qrCodeGenerator: qrCodeGenerator
-        )
-    }
-    
+    @Environment(OrdersViewModel.self) var ordersViewModel
     
     var body: some View {
         List {
-            Button("Add product", systemImage: "plus"){
+            Button("Add session", systemImage: "plus") {
                 Task {
-                    await orderViewModel.createOrderSession(panelViewModel: panelViewModel)
+                    do {
+                        panelViewModel.isLoading = true
+                        defer { panelViewModel.isLoading = false }
+                        
+                        try await ordersViewModel.createOrderSession()
+                    } catch let error as UserRepresentableError {
+                        panelViewModel.errorMessage = error.userMessage
+                    }
                 }
             }
             
@@ -39,7 +31,13 @@ struct OrdersView: View {
                 NavigationLink("Order sessions") {
                     OrderSessionsView()
                         .environment(panelViewModel)
-                        .environment(orderViewModel)
+                        .environment(ordersViewModel)
+                }
+                
+                NavigationLink("Ordered products") {
+                    OrderedProductsView()
+                        .environment(panelViewModel)
+                        .environment(ordersViewModel)
                 }
             }
         }

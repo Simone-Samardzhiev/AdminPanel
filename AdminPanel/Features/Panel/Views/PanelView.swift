@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import os
 
 /// The main container view for the admin panel UI.
 ///
@@ -13,13 +14,37 @@ import SwiftUI
 ////detail placeholders. Shows a loading indicator in the toolbar when `isLoading` is true.
 struct PanelView: View {
     /// Backing view model that exposes shared UI-state like loading.
-    @State var panelViewModel: PanelViewModel
+    @State private var panelViewModel: PanelViewModel
     
-    let credentials: Credentials
+    @State private var productViewModel: ProductsViewModel
+    
+    @State private var ordersViewModel: OrdersViewModel
+    
+    private let credentials: Credentials
     
     /// Creates the panel view with a fresh `PanelViewModel` instance.
     init(_ credentials: Credentials) {
-        self.panelViewModel = PanelViewModel()
+        self.panelViewModel = .init()
+    
+        let jsonEncoder = JSONEncoder()
+        let jsonDecoder = JSONDecoder()
+        
+        self.productViewModel = .init(
+            credentials: credentials,
+            productService: ProductService(
+                jsonEncoder: jsonEncoder,
+                jsonDecoder: jsonDecoder
+            )
+        )
+        
+        self.ordersViewModel = .init(
+            credentials: credentials,
+            orderService: OrderService(
+                jsonEncoder: jsonEncoder,
+                jsonDecoder: jsonDecoder),
+            qrCodeGenerator: QRCodeGenerator()
+        )
+        
         self.credentials = credentials
     }
     
@@ -29,31 +54,26 @@ struct PanelView: View {
         NavigationSplitView {
             List {
                 NavigationLink("Menu") {
-                    CategoriesView(
-                        credentials: credentials,
-                        productService: ProductService(
-                            jsonEncoder: .init(),
-                            jsonDecoder: .init()
-                        )
-                    )
-                    .environment(panelViewModel)
+                    CategoriesView()
+                        .environment(productViewModel)
+                        .environment(panelViewModel)
                 }
                 NavigationLink("Orders") {
-                    OrdersView(
-                        credentials: credentials,
-                        orderService: OrderService(
-                            jsonEncoder: .init(),
-                            jsonDecoder: .init()),
-                        qrCodeGenerator: QRCodeGenerator()
-                    )
-                    .environment(panelViewModel)
+                    OrdersView()
+                        .environment(ordersViewModel)
+                        .environment(panelViewModel)
                 }
             }
             .listStyle(.sidebar)
             .navigationTitle("Admin Panel")
             .alert(
                 "Error",
-                isPresented: .constant(panelViewModel.errorMessage != nil)
+                isPresented: Binding<Bool> (
+                    get: { panelViewModel.errorMessage != nil },
+                    set: { isPresented in
+                        if !isPresented { panelViewModel.errorMessage = nil }
+                    }
+                )
             ) {
                 Button(role: .close) {
                     panelViewModel.errorMessage = nil
@@ -67,17 +87,36 @@ struct PanelView: View {
             Text("Details")
         }
         .toolbar {
-            ToolbarItem(placement: .automatic) {
-                if panelViewModel.isLoading {
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                        .scaleEffect(0.5)
-                        .animation(
-                            .easeInOut(duration: 0.2),
-                            value: panelViewModel.isLoading
-                        )
-                }
+            toolbar
+        }
+        .task {
+            do {
+                try await productViewModel.loadData()
+                try await ordersViewModel.loadData()
+            } catch let error as UserRepresentableError {
+                panelViewModel.errorMessage = error.userMessage
+            } catch is CancellationError {
+                
+            }
+            catch {
+                LoggerConfig.shared.logCore(level: .error, "Unknown error on loading data \(error.localizedDescription)")
+                panelViewModel.errorMessage = "Unknown error. Please try again later."
+            }
+        }
+    }
+    
+    private var toolbar: some ToolbarContent {
+        ToolbarItem(placement: .automatic) {
+            if panelViewModel.isLoading {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .scaleEffect(0.5)
+                    .animation(
+                        .easeInOut(duration: 0.2),
+                        value: panelViewModel.isLoading
+                    )
             }
         }
     }
 }
+

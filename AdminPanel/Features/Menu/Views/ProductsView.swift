@@ -45,10 +45,15 @@ struct ProductsView: View {
                                 }
                                 Button("Delete product", systemImage: "trash") {
                                     Task {
-                                        await productsViewModel.deleteProduct(
-                                            panelViewModel: panelViewModel,
-                                            productId: product.id
-                                        )
+                                        do {
+                                            panelViewModel.isLoading = true
+                                            defer { panelViewModel.isLoading = false }
+                                            try await productsViewModel.deleteProduct(
+                                                productId: product.id
+                                            )
+                                        } catch let error as UserRepresentableError {
+                                            panelViewModel.errorMessage = error.userMessage
+                                        }
                                     }
                                 }
                             }
@@ -84,11 +89,16 @@ struct ProductsView: View {
         }
         
         Task {
-            await productsViewModel.updateProductImage(
-                panelViewModel: panelViewModel,
-                productId: productId,
-                imageData: data
-            )
+            do {
+                panelViewModel.isLoading = true
+                defer { panelViewModel.isLoading = false }
+                try await productsViewModel.updateProductImage(
+                    productId: productId,
+                    imageData: data
+                )
+            } catch let error as UserRepresentableError {
+                panelViewModel.errorMessage = error.userMessage
+            }
         }
     }
 }
@@ -100,13 +110,19 @@ extension ProductsView {
         
         @Environment(ProductsViewModel.self) var productsViewModel
         
+        /// Product that will be edited.
         @State private var product: Product
-        
+                
+        /// Error message to be displayed.
         @State private var errorMessage: String?
+        
+        /// Variable representing wether product update is in progress.
+        @State private var isLoading: Bool
         
         init(_ product: Product) {
             self.product = product
             self.errorMessage = nil
+            self.isLoading = false
         }
         
         private var currencyCode: String {
@@ -136,14 +152,7 @@ extension ProductsView {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        Task {
-                            errorMessage = await productsViewModel.updateProduct(product)
-                            if errorMessage == nil {
-                                dismiss()
-                            }
-                        }
-                    }
+                    doneButton
                 }
             }
         }
@@ -196,6 +205,32 @@ extension ProductsView {
                         .tag(category.id)
                 }
             }
+        }
+        
+        private var doneButton: some View {
+            Button {
+                Task {
+                    do {
+                        isLoading = true
+                        try await productsViewModel.updateProduct(product)
+                        dismiss()
+                    } catch let error as UserRepresentableError {
+                        errorMessage = error.userMessage
+                        isLoading = false
+                    }
+                }
+            } label: {
+                if isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Text("Done")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isLoading)
+            .disabled(isLoading)
         }
     }
     

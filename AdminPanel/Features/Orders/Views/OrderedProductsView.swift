@@ -8,11 +8,33 @@
 import SwiftUI
 
 struct OrderedProductsView: View {
+    @Environment(OrdersViewModel.self) var ordersViewModel
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
-    }
-}
+        HStack {
+            List {
+                Section("Pending") {
+                    ForEach(ordersViewModel.orderedProductsByStatus(status: .pending)) { product in
+                        Text(product.id.uuidString)
+                    }
+                }
+            }
 
-#Preview {
-    OrderedProductsView()
+            List {
+                Section("Preparing") {
+                    ForEach(ordersViewModel.orderedProductsByStatus(status: .preparing)) { product in
+                        Text(product.id.uuidString)
+                    }
+                }
+            }
+
+            List {
+                Section("Done") {
+                    ForEach(ordersViewModel.orderedProductsByStatus(status: .done)) { product in
+                        Text(product.id.uuidString)
+                    }
+                }
+            }
+        }
+    }
 }

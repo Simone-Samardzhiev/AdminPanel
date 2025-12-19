@@ -26,6 +26,11 @@ protocol OrderServiceProtocol {
     ///   - credentials: Credentials used to authenticate.
     ///   - id: The id of the session.
     func deleteSession(credentials: Credentials, id: UUID) async throws(HTTPError)
+    
+    
+    /// Fetches all ordered products.
+    /// - Parameter credentials: Credentials used to authenticate.
+    func getOrderedProducts(credentials: Credentials) async throws(HTTPError) -> [OrderedProduct]
 }
 
 /// Default `OrderServiceProtocol` implementation using JSON and `URLSession`.
@@ -140,6 +145,42 @@ extension OrderService {
         
         guard httpResponse.statusCode == 200 else {
             throw .invalidStatusCode(httpResponse.statusCode)
+        }
+    }
+    
+    /// Issues a GET request to `/admin/orders/ordered-products` and decodes the response.
+    func getOrderedProducts(credentials: Credentials) async throws(HTTPError) -> [OrderedProduct] {
+        let url = APIClient.shared.url
+            .appending(path: "admin")
+            .appending(path: "orders")
+            .appending(path: "ordered-products")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue(APIClient.encodeCredentials(credentials), forHTTPHeaderField: "Authorization")
+        
+        
+        let data: Data
+        let response: URLResponse
+        
+        do {
+            (data, response) = try await APIClient.shared.urlSession.data(for: request)
+        } catch {
+            throw .requestFailed(error)
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw .invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw .invalidStatusCode(httpResponse.statusCode)
+        }
+        
+        do {
+            return try jsonDecoder.decode([OrderedProduct].self, from: data)
+        } catch {
+            throw .responseBodyDecodingFailed(error)
         }
     }
 }

@@ -1,5 +1,5 @@
 //
-//  OrderViewModel.swift
+//  OrdersViewModel.swift
 //  AdminPanel
 //
 //  Created by Simone Samardzhiev on 13.12.25.
@@ -12,7 +12,7 @@ import UniformTypeIdentifiers
 /// View models responsible for loading orders and coordinating loading state with `PanelViewModel`
 @Observable
 @MainActor
-final class OrderViewModel {
+final class OrdersViewModel {
     /// Service used to API operations.
     @ObservationIgnored let orderService: OrderServiceProtocol
     /// Credentials used to authenticate.
@@ -24,35 +24,32 @@ final class OrderViewModel {
     /// Array holding all order sessions.
     var orderSessions: [OrderSession]
     
+    /// Array holding the ordered products
+    var orderedProducts: [OrderedProduct]
+    
     /// Default initializer.
     /// - Parameters:
-    ///   - orderService: The service used to make API requests.
     ///   - credentials: Credentials used to authenticate.
-    init(orderService: OrderServiceProtocol, credentials: Credentials, qrCodeGenerator: QRCodeGeneratorProtocol) {
-        self.orderService = orderService
+    ///   - orderService: The service used to make API requests.
+    ///   - qrCodeGenerator: Generator for QR codes for sessions.
+    init(credentials: Credentials, orderService: OrderServiceProtocol, qrCodeGenerator: QRCodeGeneratorProtocol) {
         self.credentials = credentials
+        self.orderService = orderService
         self.qrCodeGenerator = qrCodeGenerator
         self.orderSessions = []
+        self.orderedProducts = []
     }
     
     /// Function that loads necessary data to display orders
-    /// - Parameter panelViewModel: Panel view models used to update the state of the panel.
-    func loadData(panelViewModel: PanelViewModel) async {
-        panelViewModel.isLoading = true
-        defer { panelViewModel.isLoading = false }
-        
-        do {
-            self.orderSessions = try await orderService.getOrderSessions(credentials: credentials)
-        } catch {
-            panelViewModel.errorMessage = error.userMessage
-        }
+    func loadData() async throws(HTTPError) {
+        self.orderSessions = try await orderService.getOrderSessions(credentials: credentials)
+        self.orderedProducts = try await orderService.getOrderedProducts(credentials: credentials)
     }
     
     /// Function that will generate a PDF file for a specific order session.
     /// - Parameters:
     ///   - orderSession: The order session for the PDF file.
-    ///   - panelViewModel: ViewModel to report any errors.
-    func generatePDF(orderSession: OrderSession, panelViewModel: PanelViewModel) {
+    func generatePDF(orderSession: OrderSession) async throws(OrderSessionError) {
         let sessionIdString = orderSession.id.uuidString
         
         let sessionURL = APIClient.shared.url
@@ -68,8 +65,7 @@ final class OrderViewModel {
             pageSize: CGSize(width: 595, height: 842),
             qrSize: 512
         ) else {
-            panelViewModel.errorMessage = "Error creating PDF file"
-            return
+            throw .errorCreatingPDFFile
         }
         
         let panel = NSSavePanel()
@@ -78,39 +74,50 @@ final class OrderViewModel {
         panel.nameFieldStringValue = sessionIdString
         panel.prompt = "Save"
         
-        panel.begin { response in
-            if response == .OK, let url = panel.url {
-                do {
-                    try fileData.write(to: url)
-                } catch {
-                    panelViewModel.errorMessage = "Error writing PDF file"
-                }
-            }
-        }
+        let result = await panel.begin()
+          switch result {
+          case .OK:
+              guard let url = panel.url else {
+                  throw .errorCreatingPDFFile
+              }
+              do {
+                  try fileData.write(to: url)
+              } catch {
+                  throw .errorCreatingPDFFile
+              }
+          default:
+              break
+          }
     }
     
     /// Function to create a new order session
     /// - Parameter panelViewModel: ViewModel to report any errors.
-    func createOrderSession(panelViewModel: PanelViewModel) async {
+    func createOrderSession() async throws(OrderSessionError) {
         do {
             let session = try await orderService.createSession(credentials: credentials)
             orderSessions.append(session)
         } catch {
-            panelViewModel.errorMessage = error.userMessage
+            throw .network(error)
         }
     }
     
     /// Function to delete a session by id.
     /// - Parameters:
     ///   - id: The id of the session.
-    ///   - panelViewModel: ViewModel to report any errors.
-    func deleteOrderSession(id: UUID, panelViewModel: PanelViewModel) async {
+    func deleteOrderSession(id: UUID) async throws(CategoryError) {
         do {
             try await orderService.deleteSession(credentials: credentials, id: id)
         } catch {
-            panelViewModel.errorMessage = error.userMessage
+            throw .network(error)
         }
         
         orderSessions.removeAll { $0.id == id }
+    }
+    
+    /// Function that filters ordered products by status.
+    /// - Parameter status: The status used for filtering.
+    /// - Returns: The filtered ordered products.
+    func orderedProductsByStatus(status: OrderedProduct.Status) -> [OrderedProduct] {
+        return orderedProducts.filter { $0.status == status }
     }
 }

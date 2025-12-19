@@ -48,27 +48,19 @@ struct Product: Decodable, Identifiable, Hashable, Equatable {
     /// - `description` must be at least 15 characters.
     /// - `price` must be greater than 0 and less than 999999.99.
     ///
-    /// - Returns: An optional error message as a `String`.
-    ///            Returns `nil` if all validations pass, or a descriptive
-    ///            error message if a validation fails.
-    func validate() -> String? {
+    /// - Throws: `ProductError` if any of the properties is invalid.
+    func validate() throws(ProductError) {
         guard (3...100).contains(name.count) else {
-            return "Name should be between 3 and 100 characters!"
+            throw .invalidName
         }
         
         guard description.count >= 15 else {
-            return "Description should be more than 15 characters!"
+            throw .invalidDescription
         }
         
-        guard price > 0 else {
-            return "Price should be more than 0!"
+        guard (0..<1000000).contains(price) else {
+            throw .invalidPrice
         }
-        
-        guard price < 999999.99 else {
-            return "Price should be less than 999999.99!"
-        }
-        
-        return nil
     }
 }
 
@@ -108,27 +100,19 @@ struct AddProduct: Encodable {
     /// - `description` must be at least 15 characters.
     /// - `price` must be greater than 0 and less than 999999.99.
     ///
-    /// - Returns: An optional error message as a `String`.
-    ///            Returns `nil` if all validations pass, or a descriptive
-    ///            error message if a validation fails.
-    func validate() -> String? {
+    /// - Throws: `ProductError` if any of the properties is invalid.
+    func validate() throws(ProductError) {
         guard (3...100).contains(name.count) else {
-            return "Name should be between 3 and 100 characters!"
+            throw .invalidName
         }
         
         guard description.count >= 15 else {
-            return "Description should be more than 15 characters!"
+            throw .invalidDescription
         }
         
-        guard price > 0 else {
-            return "Price should be more than 0!"
+        guard (0..<1000000).contains(price) else {
+            throw .invalidPrice
         }
-        
-        guard price < 999999.99 else {
-            return "Price should be less than 999999.99!"
-        }
-        
-        return nil
     }
 
 }

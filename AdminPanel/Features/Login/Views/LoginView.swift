@@ -19,11 +19,11 @@ import SwiftUI
 /// Login view used to display login screen.
 struct LoginView: View {
     @Environment(AuthenticationState.self) private var authenticationState
-    @State private var viewModel: LoginViewModel
+    @State private var loginViewModel: LoginViewModel
     
     /// Creates the login view and injects dependencies into its view model.
     init(_ service: AuthenticationServiceProtocol) {
-        self.viewModel = LoginViewModel(service)
+        self.loginViewModel = LoginViewModel(service)
     }
     
     /// Renders the sign-in UI with fields for username and password, a sign-in button,
@@ -40,7 +40,7 @@ struct LoginView: View {
             loginButton
             
             // Error message with proper transition
-            if let errorMessage = viewModel.errorMessage {
+            if let errorMessage = loginViewModel.errorMessage {
                 Text(errorMessage)
                     .font(.headline.bold())
                     .foregroundStyle(.red.opacity(0.8))
@@ -49,7 +49,7 @@ struct LoginView: View {
         }
         .padding()
         .frame(maxWidth: 400)
-        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.errorMessage)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: loginViewModel.errorMessage)
     }
     
     /// Header section containing icon and descriptive text.
@@ -72,34 +72,48 @@ struct LoginView: View {
     
     /// Text field bound to the user's username.
     private var usernameField: some View {
-        TextField("Username", text: $viewModel.username)
+        TextField("Username", text: $loginViewModel.username)
             .textFieldStyle(.roundedBorder)
             .autocorrectionDisabled()
             .textContentType(.username)
-            .disabled(viewModel.isLoading)
-            .opacity(viewModel.isLoading ? 0.5 : 1)
-            .animation(.easeInOut(duration: 0.2), value: viewModel.isLoading)
+            .disabled(loginViewModel.isLoading)
+            .opacity(loginViewModel.isLoading ? 0.5 : 1)
+            .animation(.easeInOut(duration: 0.2), value: loginViewModel.isLoading)
     }
     
     /// Secure field bound to the user's password.
     private var passwordField: some View {
-        SecureField("Password", text: $viewModel.password)
+        SecureField("Password", text: $loginViewModel.password)
             .textFieldStyle(.roundedBorder)
             .autocorrectionDisabled()
             .textContentType(.password)
-            .disabled(viewModel.isLoading)
-            .opacity(viewModel.isLoading ? 0.5 : 1)
-            .animation(.easeInOut(duration: 0.2), value: viewModel.isLoading)
+            .disabled(loginViewModel.isLoading)
+            .opacity(loginViewModel.isLoading ? 0.5 : 1)
+            .animation(.easeInOut(duration: 0.2), value: loginViewModel.isLoading)
     }
     
     /// Button that triggers the asynchronous sign-in process.
     private var loginButton: some View {
         Button {
             Task {
-                await viewModel.login(authenticationState)
+                do {
+                    let success = try await loginViewModel.login()
+                    if success {
+                        authenticationState.state = .authenticated(
+                            .init(
+                                username: loginViewModel.username,
+                                password: loginViewModel.password)
+                        )
+                    } else {
+                        loginViewModel.errorMessage = "Wrong credentials!"
+                        authenticationState.state = .notAuthenticated
+                    }
+                } catch let error as UserRepresentableError {
+                    loginViewModel.errorMessage = error.userMessage
+                }
             }
         } label: {
-            if viewModel.isLoading {
+            if loginViewModel.isLoading {
                 ProgressView()
                     .controlSize(.regular)
             } else {
@@ -109,9 +123,9 @@ struct LoginView: View {
             }
             
         }
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: viewModel.isLoading)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: loginViewModel.isLoading)
         .buttonStyle(.glassProminent)
-        .disabled(viewModel.isLoading)
+        .disabled(loginViewModel.isLoading)
         .controlSize(.large)
         .keyboardShortcut(.defaultAction)
     }

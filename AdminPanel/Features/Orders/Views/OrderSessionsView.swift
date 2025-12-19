@@ -9,7 +9,7 @@ import SwiftUI
 
 /// View displaying order sessions.
 struct OrderSessionsView: View {
-    @Environment( OrderViewModel.self) var orderViewModel
+    @Environment( OrdersViewModel.self) var ordersViewModel
     @Environment(PanelViewModel.self) var panelViewModel
     
     /// Columns for the `LazyVGrid`
@@ -21,15 +21,12 @@ struct OrderSessionsView: View {
     var body: some View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 16) {
-                ForEach(orderViewModel.orderSessions) { session in
+                ForEach(ordersViewModel.orderSessions) { session in
                     OrderSessionCard(session)
-                        .environment(orderViewModel)
+                        .environment(ordersViewModel)
                 }
             }
             .padding()
-        }
-        .task {
-            await orderViewModel.loadData(panelViewModel: panelViewModel)
         }
     }
 }
@@ -60,7 +57,7 @@ extension OrderSessionsView {
     
     /// Card displaying the order session.
     private struct OrderSessionCard: View {
-        @Environment(OrderViewModel.self) var orderViewModel
+        @Environment(OrdersViewModel.self) var orderViewModel
         
         @Environment(PanelViewModel.self) var panelViewModel
         
@@ -89,11 +86,27 @@ extension OrderSessionsView {
             }
             .contextMenu {
                 Button("Generate QR code", systemImage: "qrcode") {
-                    orderViewModel.generatePDF(orderSession: session, panelViewModel: panelViewModel)
+                    Task {
+                        do {
+                            panelViewModel.isLoading = true
+                            defer { panelViewModel.isLoading = false}
+                            
+                           try await orderViewModel.generatePDF(orderSession: session)
+                        } catch let error as UserRepresentableError {
+                            panelViewModel.errorMessage = error.userMessage
+                        }
+                    }
                 }
                 Button("Delete", systemImage: "trash") {
                     Task {
-                        await orderViewModel.deleteOrderSession(id: session.id, panelViewModel: panelViewModel)
+                        do {
+                            panelViewModel.isLoading = true
+                            defer { panelViewModel.isLoading = false}
+                            
+                            try await orderViewModel.deleteOrderSession(id: session.id)
+                        } catch let error as UserRepresentableError {
+                            panelViewModel.errorMessage = error.userMessage
+                        }
                     }
                 }
             }

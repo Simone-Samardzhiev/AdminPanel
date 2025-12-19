@@ -44,30 +44,14 @@ final class LoginViewModel {
     }
     
     /// Attempts to sign in with the current `username` and `password`.
-    ///
-    /// Updates `isLoading` while the request is active, sets `errorMessage` on failure,
-    /// and updates `authenticationState` on success.
-    func login(_ state: AuthenticationState) async {
-        errorMessage = nil
+    /// - Throws: HTTPError if the service call fails.
+    /// - Returns: Bool variable representing if the login was successful.
+    func login() async throws(HTTPError)  -> Bool {
         isLoading = true
         defer {
             isLoading = false
         }
         
-        let success: Bool
-        
-        do {
-            success = try await authenticationService.login(username: username, password: password)
-        } catch {
-            errorMessage = error.userMessage
-            LoggerConfig.shared.logNetwork(level: .error, "Error logging in \(error.localizedDescription)")
-            return
-        }
-        
-        if success {
-            state.state = .authenticated(.init(username: username, password: password))
-        } else {
-            errorMessage = "Wrong credentials!"
-        }
+        return try await authenticationService.login(username: username, password: password)
     }
 }

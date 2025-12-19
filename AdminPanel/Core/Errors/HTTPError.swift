@@ -8,9 +8,7 @@
 import Foundation
 
 /// Common HTTP-layer errors used by networking services in the app.
-///
-/// These cases intentionally avoid leaking transport details into higher layers.
-enum HTTPError: Error, LocalizedError {
+enum HTTPError: Error, LocalizedError, UserRepresentableError {
     /// The request could not be completed (e.g., connectivity or timeout).
     case requestFailed(Error)
     

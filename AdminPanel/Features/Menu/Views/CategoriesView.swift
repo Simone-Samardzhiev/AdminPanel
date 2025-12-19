@@ -11,16 +11,11 @@ import SwiftUI
 struct CategoriesView: View {
     @Environment(PanelViewModel.self) private var panelViewModel
     
-    @State private var productsViewModel: ProductsViewModel
+    @Environment(ProductsViewModel.self) var productsViewModel
     
     @State private var activeSheet: ActiveSheet?
     
-    init(credentials: Credentials, productService: ProductServiceProtocol) {
-        self.productsViewModel = ProductsViewModel(
-            credentials: credentials,
-            productService: productService
-        )
-    
+    init() {
         self.activeSheet = nil
     }
     
@@ -75,9 +70,6 @@ struct CategoriesView: View {
                     .environment(productsViewModel)
             }
         }
-        .task {
-            await productsViewModel.loadData(panelViewModel)
-        }
     }
 }
 
@@ -100,21 +92,106 @@ extension CategoriesView {
     
     /// Sheet for creating a new category.
     private struct AddCategoryView: View {
-        @Environment(PanelViewModel.self) private  var panelViewModel
+        @Environment(ProductsViewModel.self) private var productsViewModel
+        
+        @Environment(\.dismiss) private var dismiss
+        
+        /// The name of the category.
+        @State private var name: String
+        
+        /// Variable representing whether adding is in progress.
+        @State private var isLoading: Bool
+        
+        /// Error message to be displayed.
+        @State private var errorMessage: String?
+        
+        init() {
+            self.name = ""
+            self.isLoading = false
+            self.errorMessage = nil
+        }
+        
+        var body: some View {
+            VStack(spacing: 24) {
+                LabeledContent("Name") {
+                    TextField("Name", text: $name)
+                        .textFieldStyle(.roundedBorder)
+                        .textContentType(.name)
+                }
+                
+                if let errorMessage = errorMessage {
+                    Text(errorMessage)
+                        .font(.headline)
+                        .foregroundStyle(.red)
+                }
+            }
+            .padding(.all, 32)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    addButton
+                }
+            }
+        }
+        
+        /// Button for adding a category.
+        private var addButton: some View {
+            Button {
+                Task {
+                    do {
+                        isLoading = true
+                        try await productsViewModel.addCategory(categoryName: name)
+                        dismiss()
+                    } catch let error as UserRepresentableError {
+                        errorMessage = error.userMessage
+                        isLoading = false
+                    }
+                }
+            } label: {
+                if isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Text("Add")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isLoading)
+            .disabled(isLoading)
+        }
+    }
+    
+    /// Sheet for editing an existing category.
+    private struct EditCategoryView: View {
+        @Environment(PanelViewModel.self) private var panelViewModel
         
         @Environment(ProductsViewModel.self) private var productsViewModel
         
         @Environment(\.dismiss) private var dismiss
         
-        @State private var name: String
+        let oldName: String
         
-        init() {
-            self.name = ""
+        let id: UUID
+        
+        @State private var isLoading: Bool
+        
+        @State var newName: String
+        
+        init(id: UUID, name: String) {
+            self.id = id
+            self.oldName = name
+            self.newName = name
+            self.isLoading = false
         }
         
         var body: some View {
             LabeledContent("Name") {
-                TextField("Name", text: $name)
+                TextField("Name", text: $newName)
                     .textFieldStyle(.roundedBorder)
                     .textContentType(.name)
             }
@@ -127,15 +204,99 @@ extension CategoriesView {
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
-                        Task {
-                            await productsViewModel.addCategory(
-                                panelViewModel: panelViewModel, categoryName: name)
-                        }
-                        dismiss()
-                    }
+                    doneButton
                 }
             }
+        }
+        
+        /// Button to finish updating a category.
+        private var doneButton: some View {
+            Button {
+                Task {
+                    do {
+                        isLoading = true
+                        try await productsViewModel.updateCategory(id: id, oldName: oldName, newName: newName)
+                        dismiss()
+                    } catch let error as UserRepresentableError {
+                        panelViewModel.errorMessage = error.userMessage
+                        isLoading = false
+                    }
+                }
+            } label: {
+                if isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Text("Done")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isLoading)
+            .disabled(isLoading)
+        }
+    }
+    
+    /// Sheet for deleting a product category
+    private struct DeleteCategoryView: View {
+        @Environment(PanelViewModel.self) private var panelViewModel
+        
+        @Environment(ProductsViewModel.self) private var productsViewModel
+        
+        @Environment(\.dismiss) private var dismiss
+        
+        /// The id of the category that will be updated.
+        private let categoryId: UUID
+        
+        /// The category name that will be updated.
+        private let categoryName: String
+        
+        /// Variable representing whether deleting is in progress.
+        @State private var isLoading: Bool
+        
+        init(categoryId: UUID, categoryName: String) {
+            self.categoryId = categoryId
+            self.categoryName = categoryName
+            self.isLoading = false
+        }
+        
+        var body: some View {
+            Text("Are you sure you want to delete \(categoryName). This will delete all products in this category!")
+                .font(.title2.bold())
+                .padding(.all, 32)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        deleteButton
+                    }
+                }
+        }
+        
+        private var deleteButton: some View {
+            Button {
+                Task {
+                    do {
+                        isLoading = true
+                        try await productsViewModel.deleteCategory(
+                            categoryId: categoryId,
+                            categoryName: categoryName
+                        )
+                        dismiss()
+                    } catch let error as UserRepresentableError {
+                        panelViewModel.errorMessage = error.userMessage
+                    }
+                }
+            } label: {
+                if isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Text("Done")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isLoading)
+            .disabled(isLoading)
         }
     }
     
@@ -143,9 +304,10 @@ extension CategoriesView {
     private struct AddProductView: View {
         @Environment(\.dismiss) private var dismiss
         
-        @Environment(PanelViewModel.self) private var panelViewModel
-        
         @Environment(ProductsViewModel.self) private var productsViewModel
+        
+        /// Variable representing if adding products is in progress.
+        @State private var isLoading: Bool
         
         /// Error message to be displayed.
         @State private var errorMessage: String?
@@ -154,6 +316,7 @@ extension CategoriesView {
         @State private var productDraft: ProductDraft
         
         init() {
+            self.isLoading = false
             self.errorMessage = nil
             self.productDraft = .init()
         }
@@ -181,26 +344,7 @@ extension CategoriesView {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
-                        if let category = productDraft.category {
-                            Task {
-                                errorMessage = await productsViewModel.addProduct(
-                                    .init(
-                                        name: productDraft.name,
-                                        description: productDraft.description,
-                                        category: category,
-                                        price: productDraft.price
-                                    )
-                                )
-                            }
-                        } else {
-                            errorMessage = "Please provide a category!"
-                        }
-                        
-                        if errorMessage == nil {
-                            dismiss()
-                        }
-                    }
+                    addButton
                 }
             }
         }
@@ -259,6 +403,45 @@ extension CategoriesView {
             }
         }
         
+        /// Button used for adding a product.
+        private var addButton: some View {
+            Button {
+                Task {
+                    if let category = productDraft.category {
+                        do {
+                            isLoading = true
+                            try await productsViewModel.addProduct(
+                                .init(
+                                    name: productDraft.name,
+                                    description: productDraft.description,
+                                    category: category,
+                                    price: productDraft.price
+                                )
+                            )
+                            dismiss()
+                        } catch let error as UserRepresentableError {
+                            errorMessage = error.userMessage
+                            isLoading = false
+                        }
+                        
+                    } else {
+                        errorMessage = "Please provide a category!"
+                    }
+                }
+            } label: {
+                if isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Text("Done")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isLoading)
+            .disabled(isLoading)
+        }
+        
         private struct ProductDraft {
             var name: String
             var description: String
@@ -273,100 +456,4 @@ extension CategoriesView {
             }
         }
     }
-
-    /// Sheet for editing an existing category.
-    private struct EditCategoryView: View {
-        @Environment(PanelViewModel.self) private var panelViewModel
-        
-        @Environment(ProductsViewModel.self) private var productsViewModel
-        
-        @Environment(\.dismiss) private var dismiss
-        
-        let oldName: String
-        let id: UUID
-        
-        @State var newName: String
-        
-        init(id: UUID, name: String) {
-            self.id = id
-            self.oldName = name
-            self.newName = name
-        }
-        
-        var body: some View {
-            LabeledContent("Name") {
-                TextField("Name", text: $newName)
-                    .textFieldStyle(.roundedBorder)
-                    .textContentType(.name)
-            }
-            .padding(.all, 32)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        Task {
-                            await productsViewModel.updateCategory(
-                                panelViewModel: panelViewModel,
-                                id: id,
-                                oldName: oldName,
-                                newName: newName
-                            )
-                        }
-                        dismiss()
-                    }
-                }
-            }
-        }
-    }
-    
-    /// Sheet for deleting a product category
-    private struct DeleteCategoryView: View {
-        @Environment(PanelViewModel.self) private var panelViewModel
-        
-        @Environment(ProductsViewModel.self) private var productsViewModel
-        
-        @Environment(\.dismiss) private var dismiss
-        
-        private let categoryId: UUID
-        
-        private let categoryName: String
-        
-        init(categoryId: UUID, categoryName: String) {
-            self.categoryId = categoryId
-            self.categoryName = categoryName
-        }
-        
-        var body: some View {
-            Text("Are you sure you want to delete \(categoryName). This will delete all products in this category!")
-                .font(.title2.bold())
-                .padding(.all, 32)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
-                            dismiss()
-                        }
-                    }
-                    
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Delete") {
-                            Task {
-                                await productsViewModel.deleteCategory(
-                                    panelViewModel: panelViewModel,
-                                    categoryId: categoryId,
-                                    categoryName: categoryName
-                                )
-                                
-                                dismiss()
-                            }
-                        }
-                    }
-                }
-        }
-    }
-
 }

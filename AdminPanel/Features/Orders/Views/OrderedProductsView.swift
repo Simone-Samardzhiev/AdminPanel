@@ -92,8 +92,8 @@ extension OrderedProductsView {
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
             .clipShape(RoundedRectangle(cornerRadius: 12))
-            .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 3)
             .glassEffect(in: .rect(cornerRadius: 12))
+            .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 3)
         }
 
         private var missingDataView: some View {

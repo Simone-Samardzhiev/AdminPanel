@@ -8,6 +8,7 @@
 import Foundation
 import AppKit
 import UniformTypeIdentifiers
+import os
 
 /// View models responsible for loading orders and coordinating loading state with `PanelViewModel`
 @Observable
@@ -31,10 +32,12 @@ final class OrdersViewModel {
     /// Array holding all order sessions.
     var orderSessions: [OrderSession]
     
-    @ObservationIgnored private  var mapOrderSessionIdToIndex: [UUID: Int]
+    @ObservationIgnored private var mapOrderSessionIdToIndex: [UUID: Int]
     
     /// Array holding the ordered products
     var orderedProducts: [OrderedProduct]
+    
+    @ObservationIgnored private var mapOrderedProductIdToIndex: [UUID: Int]
     
     
     /// Default initializer.
@@ -50,12 +53,16 @@ final class OrdersViewModel {
         qrCodeGenerator: QRCodeGeneratorProtocol
     ) {
         self.credentials = credentials
+        
         self.orderService = orderService
         self.orderWebSocketService = orderWebSocketService
         self.qrCodeGenerator = qrCodeGenerator
+        
         self.orderSessions = []
         self.mapOrderSessionIdToIndex = [:]
+        
         self.orderedProducts = []
+        self.mapOrderedProductIdToIndex = [:]
     }
     
     /// Function that loads necessary data to display orders
@@ -69,6 +76,11 @@ final class OrdersViewModel {
         mapOrderSessionIdToIndex.reserveCapacity(orderSessions.count)
         for (index, session) in orderSessions.enumerated() {
             mapOrderSessionIdToIndex[session.id] = index
+        }
+        
+        mapOrderedProductIdToIndex.reserveCapacity(orderedProducts.count)
+        for (index, orderedProduct) in orderedProducts.enumerated() {
+            mapOrderedProductIdToIndex[orderedProduct.id] = index
         }
     }
     
@@ -173,7 +185,7 @@ final class OrdersViewModel {
                     await handleWebSocketEvent(event)
                 }
             } catch {
-                
+                LoggerConfig.shared.logNetwork(level: .error, "Error receiving message from WebSocket \(error.localizedDescription)")
             }
         }
     }
@@ -189,8 +201,16 @@ final class OrdersViewModel {
                     status: order.status,
                     orderSessionId: order.sessionId
                 )
-            
+        
             orderedProducts.append(orderedProduct)
+            mapOrderedProductIdToIndex[orderedProduct.id] = orderedProducts.count - 1
+        case .delete(let delete):
+            guard let index = mapOrderedProductIdToIndex[delete.id] else {
+                break
+            }
+            
+            orderedProducts.remove(at: index)
+            mapOrderedProductIdToIndex.removeValue(forKey: delete.id)
         }
     }
     

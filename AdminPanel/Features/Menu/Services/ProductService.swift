@@ -106,7 +106,7 @@ extension ProductService: ProductServiceProtocol {
     
     /// Issues a GET request to `/public/product-categories` and decodes the response.
     func getProductCategories() async throws(HTTPError) -> [ProductCategory] {
-        let url = APIClient.shared.url
+        let url = APIClient.shared.restURL
             .appending(path: "public")
             .appending(path: "product-categories")
         
@@ -138,7 +138,7 @@ extension ProductService: ProductServiceProtocol {
     
     /// Issues a GET request to `/public/products` and decodes the response.
     func getProducts() async throws(HTTPError) -> [Product] {
-        let url = APIClient.shared.url
+        let url = APIClient.shared.restURL
             .appending(path: "public")
             .appending(path: "products")
         
@@ -170,7 +170,7 @@ extension ProductService: ProductServiceProtocol {
     
     /// Issues a GET request to `/public/products?category_id=...` and decodes the response.
     func getProductsByCategory(_ categoryId: UUID) async throws(HTTPError) -> [Product] {
-        let url = APIClient.shared.url
+        let url = APIClient.shared.restURL
             .appending(path: "public")
             .appending(path: "products")
             .appending(queryItems: [
@@ -205,7 +205,7 @@ extension ProductService: ProductServiceProtocol {
     
     /// Issues a POST request to `admin/categories` and decodes the response
     func addCategory(credentials: Credentials, category: AddProductCategory) async throws(HTTPError) -> ProductCategory {
-        let url = APIClient.shared.url
+        let url = APIClient.shared.restURL
             .appending(path: "admin")
             .appending(path: "menu")
             .appending(path: "categories")
@@ -247,7 +247,7 @@ extension ProductService: ProductServiceProtocol {
     
     /// Issues a PATCH request to `admin/categories/{id}` and checks the status code.
     func updateCategory(credentials: Credentials, categoryUpdate: CategoryUpdate) async throws(HTTPError) {
-        let url = APIClient.shared.url
+        let url = APIClient.shared.restURL
             .appending(path: "admin")
             .appending(path: "menu")
             .appending(path: "categories")
@@ -282,7 +282,7 @@ extension ProductService: ProductServiceProtocol {
     
     /// Issues a DELETE request to `admin/categories/{id}` and checks the status code.
     func deleteCategory(credentials: Credentials, categoryId: UUID) async throws(HTTPError) {
-        let url = APIClient.shared.url
+        let url = APIClient.shared.restURL
             .appending(path: "admin")
             .appending(path: "menu")
             .appending(path: "categories")
@@ -310,7 +310,7 @@ extension ProductService: ProductServiceProtocol {
 
     /// Issues a POST request to `/admin/products` and decodes the response.
     func addProduct(credentials: Credentials, product: AddProduct) async throws(HTTPError) -> Product {
-        let url = APIClient.shared.url
+        let url = APIClient.shared.restURL
             .appending(path: "admin")
             .appending(path: "menu")
             .appending(path: "products")
@@ -352,7 +352,7 @@ extension ProductService: ProductServiceProtocol {
 
     /// Issues a PATCH request to `/admin/products/{id}` and checks the status code.
     func updateProduct(credentials: Credentials, productUpdate: ProductUpdate) async throws(HTTPError) {
-        let url = APIClient.shared.url
+        let url = APIClient.shared.restURL
             .appending(path: "admin")
             .appending(path: "menu")
             .appending(path: "products")
@@ -389,7 +389,7 @@ extension ProductService: ProductServiceProtocol {
     
     /// Issues a PUT request to `/admin/products/{id}/image` and returns the new image data..
     func updateImage(credentials: Credentials, productId: UUID, image: Data) async throws(HTTPError) -> ImageUpdate {
-        let url = APIClient.shared.url
+        let url = APIClient.shared.restURL
             .appending(path: "admin")
             .appending(path: "menu")
             .appending(path: "products")
@@ -427,7 +427,7 @@ extension ProductService: ProductServiceProtocol {
     
     /// Issues a DELETE request to `/admin/products?product_id=...` and checks the status code.
     func deleteProductById(credentials: Credentials, productId: UUID) async throws(HTTPError) {
-         let url = APIClient.shared.url
+         let url = APIClient.shared.restURL
             .appending(path: "admin")
             .appending(path: "menu")
             .appending(path: "products")
@@ -458,7 +458,7 @@ extension ProductService: ProductServiceProtocol {
     
     /// Issues a DELETE request to `/admin/products?category_id=...` and checks the status code.
     func deleteProductByCategoryId(credentials: Credentials, categoryId: UUID) async throws (HTTPError) {
-        let url = APIClient.shared.url
+        let url = APIClient.shared.restURL
             .appending(path: "admin")
             .appending(path: "menu")
             .appending(path: "products")

@@ -13,21 +13,34 @@ import Foundation
 /// `APIClient` exposes a base `url` used by services to construct endpoint URLs.
 /// A shared instance is provided via `APIClient.shared`.
 struct APIClient {
-    /// The base URL for all API endpoints.
-    let url: URL
+    /// The base URL for all RESTful endpoint.
+    let restURL: URL
+    
+    /// The base URL for all WebSocket handshakes.
+    let webSocketURL: URL
     
     let urlSession: URLSession
     
     /// Shared instance.
-    static let shared = Self(url: "http://192.168.1.8:8080/api/v1")
+    static let shared = Self(
+        restURL: "http://127.0.0.1:8080/api/v1",
+        webSocketURL: "ws://127.0.0.1:8080/api/v1"
+    )
     
     /// Creates a new client from a base URL string.
     /// - Parameter url: The base URL string. Triggers a runtime `fatalError` if invalid.
-    init(url: String) {
-        guard let parsedURL = URL(string: url) else {
-            fatalError("Invalid URL: \(url)")
+    init(restURL: String, webSocketURL: String) {
+        guard let parsedRestURL = URL(string: restURL) else {
+            fatalError("Invalid rest URL: \(restURL)")
         }
-        self.url = parsedURL
+        self.restURL = parsedRestURL
+        
+        guard let parseWebSocketURL = URL(string: webSocketURL) else {
+            fatalError("Invalid WebSocket URL: \(webSocketURL)")
+        }
+        
+        self.webSocketURL = parseWebSocketURL
+        
         self.urlSession = URLSession(configuration: .default)
     }
     

@@ -13,8 +13,15 @@ import UniformTypeIdentifiers
 @Observable
 @MainActor
 final class OrdersViewModel {
-    /// Service used to API operations.
+    /// Service used to rest API operations.
     @ObservationIgnored private let orderService: OrderServiceProtocol
+    
+    /// Service used for WebSocket API operations.
+    @ObservationIgnored private let orderWebSocketService: OrderWebSocketServiceProtocol
+    
+    /// Task listening for WebSocket events.
+    @ObservationIgnored private var listenerTask: Task<Void, Never>?
+    
     /// Credentials used to authenticate.
     @ObservationIgnored private  let credentials: Credentials
     
@@ -29,14 +36,22 @@ final class OrdersViewModel {
     /// Array holding the ordered products
     var orderedProducts: [OrderedProduct]
     
+    
     /// Default initializer.
     /// - Parameters:
     ///   - credentials: Credentials used to authenticate.
-    ///   - orderService: The service used to make API requests.
+    ///   - orderService: The service used to make rest  API requests.
+    ///   - orderWebSocketService: The service used to send messages over WebSocket.
     ///   - qrCodeGenerator: Generator for QR codes for sessions.
-    init(credentials: Credentials, orderService: OrderServiceProtocol, qrCodeGenerator: QRCodeGeneratorProtocol) {
+    init(
+        credentials: Credentials,
+        orderService: OrderServiceProtocol,
+        orderWebSocketService: OrderWebSocketServiceProtocol,
+        qrCodeGenerator: QRCodeGeneratorProtocol
+    ) {
         self.credentials = credentials
         self.orderService = orderService
+        self.orderWebSocketService = orderWebSocketService
         self.qrCodeGenerator = qrCodeGenerator
         self.orderSessions = []
         self.mapOrderSessionIdToIndex = [:]
@@ -47,10 +62,10 @@ final class OrdersViewModel {
     func loadData() async throws(HTTPError) {
         self.orderSessions = try await orderService.getOrderSessions(credentials: credentials)
         self.orderedProducts = try await orderService.getOrderedProducts(credentials: credentials)
-        // loadHelperData()
+        loadHelperData()
     }
     
-    func loadHelperData() {
+    private func loadHelperData() {
         mapOrderSessionIdToIndex.reserveCapacity(orderSessions.count)
         for (index, session) in orderSessions.enumerated() {
             mapOrderSessionIdToIndex[session.id] = index
@@ -63,7 +78,7 @@ final class OrdersViewModel {
     func generatePDF(orderSession: OrderSession) async throws(OrderSessionError) {
         let sessionIdString = orderSession.id.uuidString
         
-        let sessionURL = APIClient.shared.url
+        let sessionURL = APIClient.shared.restURL
             .appending(path: "public")
             .appending(queryItems: [
                 URLQueryItem(name: "session_id", value: sessionIdString)
@@ -86,19 +101,19 @@ final class OrdersViewModel {
         panel.prompt = "Save"
         
         let result = await panel.begin()
-          switch result {
-          case .OK:
-              guard let url = panel.url else {
-                  throw .errorCreatingPDFFile
-              }
-              do {
-                  try fileData.write(to: url)
-              } catch {
-                  throw .errorCreatingPDFFile
-              }
-          default:
-              break
-          }
+        switch result {
+        case .OK:
+            guard let url = panel.url else {
+                throw .errorCreatingPDFFile
+            }
+            do {
+                try fileData.write(to: url)
+            } catch {
+                throw .errorCreatingPDFFile
+            }
+        default:
+            break
+        }
     }
     
     /// Function to create a new order session
@@ -119,13 +134,13 @@ final class OrdersViewModel {
     func deleteOrderSession(id: UUID) async throws(CategoryError) {
         do {
             try await orderService.deleteSession(credentials: credentials, id: id)
-        
+            
             orderSessions.removeAll { $0.id == id }
             mapOrderSessionIdToIndex.removeValue(forKey: id)
         } catch {
             throw .network(error)
         }
-
+        
     }
     
     /// Gets an order session id.
@@ -144,5 +159,43 @@ final class OrdersViewModel {
     /// - Returns: The filtered ordered products.
     func orderedProductsByStatus(_ status: OrderedProduct.Status) -> [OrderedProduct] {
         return orderedProducts.filter { $0.status == status }
+    }
+    
+    /// Start listening for WebSocket events.
+    func startListening() {
+        listenerTask?.cancel()
+        
+        listenerTask = Task {
+            do {
+                let stream = orderWebSocketService.connect(credentials)
+                
+                for try await event in stream {
+                    await handleWebSocketEvent(event)
+                }
+            } catch {
+                
+            }
+        }
+    }
+    
+    /// Function that handles WebSocket events and updates the view.
+    /// - Parameter event: Event to be handled.
+    private func handleWebSocketEvent(_ event: WebSocketEvent) async {
+        switch event {
+        case .order(let order):
+            let orderedProduct = OrderedProduct(
+                    id: order.id,
+                    productId: order.productId,
+                    status: order.status,
+                    orderSessionId: order.sessionId
+                )
+            
+            orderedProducts.append(orderedProduct)
+        }
+    }
+    
+    /// Stops the task listening for WebSocket events.
+    func stopListening() {
+        listenerTask?.cancel()
     }
 }

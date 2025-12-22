@@ -37,7 +37,7 @@ extension AuthenticationService: AuthenticationServiceProtocol {
         let data = Data(credentials.utf8)
         let base64Credentials = data.base64EncodedString()
         
-        let url = APIClient.shared.url
+        let url = APIClient.shared.restURL
             .appending(path: "admin")
             .appending(path: "login")
         

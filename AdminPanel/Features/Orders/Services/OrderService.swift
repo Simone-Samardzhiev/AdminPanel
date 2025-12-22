@@ -51,7 +51,7 @@ final class OrderService: OrderServiceProtocol {
 extension OrderService {
     /// Issues a GET request to `/admin/orders/sessions` and decodes the response.
     func getOrderSessions(credentials: Credentials) async throws(HTTPError) -> [OrderSession] {
-        let url = APIClient.shared.url
+        let url = APIClient.shared.restURL
             .appending(path: "admin")
             .appending(path: "orders")
             .appending(path: "sessions")
@@ -86,7 +86,7 @@ extension OrderService {
     
     /// Issues a POST request to `/admin/orders/sessions` and decodes the response.
     func createSession(credentials: Credentials) async throws(HTTPError) -> OrderSession {
-        let url = APIClient.shared.url
+        let url = APIClient.shared.restURL
             .appending(path: "admin")
             .appending(path: "orders")
             .appending(path: "sessions")
@@ -121,7 +121,7 @@ extension OrderService {
     
     /// Issues a DELETE request to `/admin/orders/sessions/{id}` and decodes the response.
     func deleteSession(credentials: Credentials, id: UUID) async throws(HTTPError) {
-        let url = APIClient.shared.url
+        let url = APIClient.shared.restURL
             .appending(path: "admin")
             .appending(path: "orders")
             .appending(path: "sessions")
@@ -150,7 +150,7 @@ extension OrderService {
     
     /// Issues a GET request to `/admin/orders/ordered-products` and decodes the response.
     func getOrderedProducts(credentials: Credentials) async throws(HTTPError) -> [OrderedProduct] {
-        let url = APIClient.shared.url
+        let url = APIClient.shared.restURL
             .appending(path: "admin")
             .appending(path: "orders")
             .appending(path: "ordered-products")

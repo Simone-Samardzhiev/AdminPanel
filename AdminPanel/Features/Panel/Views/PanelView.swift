@@ -39,9 +39,15 @@ struct PanelView: View {
         
         self.ordersViewModel = .init(
             credentials: credentials,
+            
             orderService: OrderService(
                 jsonEncoder: jsonEncoder,
                 jsonDecoder: jsonDecoder),
+            
+            orderWebSocketService: OrderWebSocketService(
+                jsonEncoder: jsonEncoder,
+                jsonDecoder: jsonDecoder,
+            ),
             qrCodeGenerator: QRCodeGenerator()
         )
         
@@ -106,6 +112,12 @@ struct PanelView: View {
                 LoggerConfig.shared.logCore(level: .error, "Unknown error on loading data \(error.localizedDescription)")
                 panelViewModel.errorMessage = "Unknown error. Please try again later."
             }
+        }
+        .onAppear {
+            ordersViewModel.startListening()
+        }
+        .onDisappear {
+            ordersViewModel.stopListening()
         }
     }
     

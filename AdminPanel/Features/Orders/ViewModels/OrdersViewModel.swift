@@ -218,6 +218,15 @@ final class OrdersViewModel {
             
             orderSessions[index].tableNumber = update.tableNumber
             orderSessions[index].status = update.status
+        case .sessionPaid(let pay):
+            guard let index = mapOrderSessionIdToIndex[pay.id] else {
+                break
+            }
+            
+            orderSessions[index].status = .paid
+            
+            orderedProducts.removeAll { $0.orderSessionId == pay.id }
+            mapOrderedProductIdToIndex = Dictionary(uniqueKeysWithValues: orderedProducts.enumerated().map({($0.element.id, $0.offset)}))
         }
     }
     

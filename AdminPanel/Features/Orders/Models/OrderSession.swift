@@ -19,6 +19,6 @@ struct OrderSession: Decodable, Identifiable {
     }
     
     let id: UUID
-    let tableNumber: Int
-    let status: Status
+    var tableNumber: Int
+    var status: Status
 }

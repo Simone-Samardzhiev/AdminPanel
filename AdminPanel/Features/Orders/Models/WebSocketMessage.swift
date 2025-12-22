@@ -15,6 +15,9 @@ enum WebSocketEvent: Decodable {
     /// Delete event represents a deleted ordered product.
     case delete(Delete)
     
+    /// Update order session event represents update of order session.
+    case updateOrderSession(OrderSessionUpdate)
+    
     enum CodingKeys: String, CodingKey {
         case type
         case data
@@ -31,6 +34,9 @@ enum WebSocketEvent: Decodable {
         case .delete:
             let data = try container.decode(Delete.self, forKey: .data)
             self = .delete(data)
+        case .orderSessionUpdate:
+            let data = try container.decode(OrderSessionUpdate.self, forKey: .data)
+            self = .updateOrderSession(data)
         }
     }
     
@@ -41,6 +47,7 @@ extension WebSocketEvent {
     private enum Events: String, Decodable {
         case order = "ORDER_OK"
         case delete = "DELETE_ORDERED_PRODUCT_OK"
+        case orderSessionUpdate = "UPDATE_SESSION_OK"
     }
     
     /// Order event payload.
@@ -54,5 +61,12 @@ extension WebSocketEvent {
     /// Delete ordered product payload.
     struct Delete: Decodable {
         let id: UUID
+    }
+    
+    /// Update order session payload.
+    struct OrderSessionUpdate: Decodable {
+        let id: UUID
+        let tableNumber: Int
+        let status: OrderSession.Status
     }
 }

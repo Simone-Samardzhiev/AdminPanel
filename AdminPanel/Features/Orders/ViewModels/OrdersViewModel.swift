@@ -211,6 +211,13 @@ final class OrdersViewModel {
             
             orderedProducts.remove(at: index)
             mapOrderedProductIdToIndex.removeValue(forKey: delete.id)
+        case .updateOrderSession(let update):
+            guard let index = mapOrderSessionIdToIndex[update.id] else {
+                break
+            }
+            
+            orderSessions[index].tableNumber = update.tableNumber
+            orderSessions[index].status = update.status
         }
     }
     

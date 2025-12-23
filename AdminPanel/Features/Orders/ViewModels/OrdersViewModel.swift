@@ -216,6 +216,12 @@ final class OrdersViewModel {
                     .map({($0.element.id, $0.offset)})
             )
             
+        case .updateOrderProductStatus(let update):
+            guard let index = mapOrderedProductIdToIndex[update.id] else {
+                break
+            }
+            
+            orderedProducts[index].status = update.status
         case .updateOrderSession(let update):
             guard let index = mapOrderSessionIdToIndex[update.id] else {
                 break

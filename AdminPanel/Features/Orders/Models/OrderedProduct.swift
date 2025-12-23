@@ -17,6 +17,6 @@ struct OrderedProduct: Decodable, Identifiable {
     
     let id: UUID
     let productId: UUID
-    let status: Status
+    var status: Status
     let orderSessionId: UUID
 }

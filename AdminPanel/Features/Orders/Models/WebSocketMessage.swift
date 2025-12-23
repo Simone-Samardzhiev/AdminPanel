@@ -18,6 +18,9 @@ enum WebSocketEvent: Decodable {
     /// Update order session event represents update of order session.
     case updateOrderSession(OrderSessionUpdate)
     
+    /// Update ordered products status event represents an update of ordered product status.
+    case updateOrderProductStatus(UpdateOrderedProductStatus)
+    
     /// Paid session event represent session has been paid.
     case sessionPaid(SessionPaid)
     
@@ -37,6 +40,9 @@ enum WebSocketEvent: Decodable {
         case .delete:
             let data = try container.decode(Delete.self, forKey: .data)
             self = .delete(data)
+        case .updateOrderedProductStatus:
+            let data = try container.decode(UpdateOrderedProductStatus.self, forKey: .data)
+            self = .updateOrderProductStatus(data)
         case .orderSessionUpdate:
             let data = try container.decode(OrderSessionUpdate.self, forKey: .data)
             self = .updateOrderSession(data)
@@ -53,6 +59,7 @@ extension WebSocketEvent {
     private enum Events: String, Decodable {
         case order = "ORDER_OK"
         case delete = "DELETE_ORDERED_PRODUCT_OK"
+        case updateOrderedProductStatus = "UPDATE_ORDERED_PRODUCT_STATUS_OK"
         case orderSessionUpdate = "UPDATE_SESSION_OK"
         case sessionPaid = "PAY_OK"
     }
@@ -68,6 +75,12 @@ extension WebSocketEvent {
     /// Delete ordered product payload.
     struct Delete: Decodable {
         let id: UUID
+    }
+    
+    // Update order status payload.
+    struct UpdateOrderedProductStatus: Decodable {
+        let id: UUID
+        let status: OrderedProduct.Status
     }
     
     /// Update order session payload.

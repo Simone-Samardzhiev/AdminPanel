@@ -57,44 +57,53 @@ extension OrderedProductsView {
     
     private struct OrderedProductCard: View {
         @Environment(OrdersViewModel.self) private var ordersViewModel
-        @Environment(ProductsViewModel.self) private var productsViewModel
+            @Environment(ProductsViewModel.self) private var productsViewModel
 
-        let orderedProduct: OrderedProduct
-        
-        init(_ orderedProduct: OrderedProduct) {
-            self.orderedProduct = orderedProduct
-        }
+            let orderedProduct: OrderedProduct
+            
+            init(_ orderedProduct: OrderedProduct) {
+                self.orderedProduct = orderedProduct
+            }
 
-        var body: some View {
-            Group {
-                if let product = product,
-                   let session = session {
-                    content(product: product, session: session)
-                } else {
-                    missingDataView
+            var body: some View {
+                Group {
+                    if let product = product, let session = session {
+                        content(product: product, session: session)
+                            .contextMenu {
+                                Button("Delete", systemImage: "trash", role: .destructive) {
+                                    Task {
+                                        await ordersViewModel.deleteOrderedProduct(orderedProduct.id)
+                                    }
+                                }
+                            }
+                    } else {
+                        missingDataView
+                    }
                 }
             }
-        }
 
+            private func content(product: Product, session: OrderSession) -> some View {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(product.name)
+                        .font(.headline)
 
-        private func content(product: Product, session: OrderSession) -> some View {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(product.name)
-                    .font(.headline)
-
-                HStack(spacing: 6) {
-                    Image(systemName: "table.furniture")
-                    Text("Table \(session.tableNumber)")
+                    HStack(spacing: 6) {
+                        Image(systemName: "table.furniture")
+                        Text("Table \(session.tableNumber)")
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                 }
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(.rect)
+                .glassEffect(.regular, in: .rect(cornerRadius: 12))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(.white.opacity(0.2), lineWidth: 0.5)
+                }
+                .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 3)
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .glassEffect(in: .rect(cornerRadius: 12))
-            .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 3)
-        }
 
         private var missingDataView: some View {
             Text("Product unavailable")
@@ -115,6 +124,4 @@ extension OrderedProductsView {
             ordersViewModel.getOrderSessionById(orderedProduct.orderSessionId)
         }
     }
-
-    
 }

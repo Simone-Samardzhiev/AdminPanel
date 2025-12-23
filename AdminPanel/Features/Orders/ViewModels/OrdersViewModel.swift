@@ -210,7 +210,12 @@ final class OrdersViewModel {
             }
             
             orderedProducts.remove(at: index)
-            mapOrderedProductIdToIndex.removeValue(forKey: delete.id)
+            mapOrderedProductIdToIndex = Dictionary(
+                uniqueKeysWithValues: orderedProducts
+                    .enumerated()
+                    .map({($0.element.id, $0.offset)})
+            )
+            
         case .updateOrderSession(let update):
             guard let index = mapOrderSessionIdToIndex[update.id] else {
                 break
@@ -226,12 +231,26 @@ final class OrdersViewModel {
             orderSessions[index].status = .paid
             
             orderedProducts.removeAll { $0.orderSessionId == pay.id }
-            mapOrderedProductIdToIndex = Dictionary(uniqueKeysWithValues: orderedProducts.enumerated().map({($0.element.id, $0.offset)}))
+            mapOrderedProductIdToIndex = Dictionary(
+                uniqueKeysWithValues: orderedProducts
+                    .enumerated()
+                    .map({($0.element.id, $0.offset)})
+            )
         }
     }
     
     /// Stops the task listening for WebSocket events.
     func stopListening() {
         listenerTask?.cancel()
+    }
+    
+    /// Sends a WebSocket message for deleting an ordered product.
+    /// - Parameter id: The id of the ordered product to be deleted.
+    func deleteOrderedProduct(_ id: UUID) async {
+        do {
+            try await orderWebSocketService.send(.delete(.init(id: id)))
+        } catch {
+            LoggerConfig.shared.logNetwork(level: .error, "Error sending message with WebSocket \(error.localizedDescription)")
+        }
     }
 }

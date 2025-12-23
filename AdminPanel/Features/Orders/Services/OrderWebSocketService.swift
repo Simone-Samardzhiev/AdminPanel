@@ -12,6 +12,10 @@ protocol OrderWebSocketServiceProtocol {
     /// Strats listening to the connect and yields received events.
     /// - Returns: Streams of the events.
     func connect(_ credentials: Credentials) -> AsyncThrowingStream<WebSocketEvent, Error>
+    
+    /// Function to send a message as encoded as string JSON.
+    /// - Parameter message: The message to be sent.
+    func send(_ message: WebSocketOutgoingMessage) async throws
 }
 
 final class OrderWebSocketService: OrderWebSocketServiceProtocol {
@@ -91,5 +95,15 @@ extension OrderWebSocketService {
     private func disconnect() async {
         self.webSocketTask?.cancel(with: .goingAway, reason: nil)
         webSocketTask = nil
+    }
+    
+    
+    func send(_ message: WebSocketOutgoingMessage) async throws {
+        let data = try jsonEncoder.encode(message)
+        guard let stringData = String(data: data, encoding: .utf8) else {
+            return
+        }
+        
+        try await webSocketTask?.send(.string(stringData))
     }
 }

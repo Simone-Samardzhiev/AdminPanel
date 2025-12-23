@@ -82,3 +82,36 @@ extension WebSocketEvent {
         let id: UUID
     }
 }
+
+/// Messages send from the app.
+enum WebSocketOutgoingMessage: Encodable {
+    /// Delete message for deleting an ordered product.
+    case delete(DeletePayload)
+    
+    enum CodingKeys: String, CodingKey {
+        case type
+        case data
+    }
+    
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        switch self {
+        case .delete(let payload):
+            try container.encode(MessageType.delete, forKey: .type)
+            try container.encode(payload, forKey: .data)
+        }
+    }
+}
+
+extension WebSocketOutgoingMessage {
+    /// Enum representing message types.
+    private enum MessageType: String, Encodable {
+        case delete = "DELETE_ORDERED_PRODUCT"
+    }
+    
+    /// Payload for deleting an ordered product.
+    struct DeletePayload: Encodable {
+        let id: UUID
+    }
+}

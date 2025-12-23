@@ -9,7 +9,7 @@ import Foundation
 
 struct OrderedProduct: Decodable, Identifiable {
     /// Status of ordered product.
-    enum Status: String, Decodable, CaseIterable {
+    enum Status: String, Codable, CaseIterable {
         case pending = "pending"
         case preparing = "preparing"
         case done = "done"

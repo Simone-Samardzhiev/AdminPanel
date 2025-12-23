@@ -259,4 +259,12 @@ final class OrdersViewModel {
             LoggerConfig.shared.logNetwork(level: .error, "Error sending message with WebSocket \(error.localizedDescription)")
         }
     }
+    
+    func updateProductStatus(id: UUID, status: OrderedProduct.Status) async {
+        do {
+            try await orderWebSocketService.send(.updateOrderedProductStatus(.init(id: id, status: status)))
+        } catch {
+            LoggerConfig.shared.logNetwork(level: .error, "Error sending message with WebSocket \(error.localizedDescription)")
+        }
+    }
 }

@@ -101,6 +101,9 @@ enum WebSocketOutgoingMessage: Encodable {
     /// Delete message for deleting an ordered product.
     case delete(DeletePayload)
     
+    /// Update message for updating an ordered product status.
+    case updateOrderedProductStatus(UpdateOrderedProductStatusPayload)
+    
     enum CodingKeys: String, CodingKey {
         case type
         case data
@@ -113,6 +116,9 @@ enum WebSocketOutgoingMessage: Encodable {
         case .delete(let payload):
             try container.encode(MessageType.delete, forKey: .type)
             try container.encode(payload, forKey: .data)
+        case .updateOrderedProductStatus(let payload):
+            try container.encode(MessageType.updateOrderedProductStatus, forKey: .type)
+            try container.encode(payload, forKey: .data)
         }
     }
 }
@@ -121,10 +127,17 @@ extension WebSocketOutgoingMessage {
     /// Enum representing message types.
     private enum MessageType: String, Encodable {
         case delete = "DELETE_ORDERED_PRODUCT"
+        case updateOrderedProductStatus = "UPDATE_ORDERED_PRODUCT_STATUS"
     }
     
     /// Payload for deleting an ordered product.
     struct DeletePayload: Encodable {
         let id: UUID
+    }
+    
+    /// Payload for updating the status of an ordered product.
+    struct UpdateOrderedProductStatusPayload: Encodable {
+        let id: UUID
+        let status: OrderedProduct.Status
     }
 }

@@ -260,9 +260,37 @@ final class OrdersViewModel {
         }
     }
     
+    /// Sends a WebSocket message for updating the status of an ordered product.
+    /// - Parameters:
+    ///   - id: The id of the ordered product.
+    ///   - status: The new status of the product.
     func updateProductStatus(id: UUID, status: OrderedProduct.Status) async {
         do {
             try await orderWebSocketService.send(.updateOrderedProductStatus(.init(id: id, status: status)))
+        } catch {
+            LoggerConfig.shared.logNetwork(level: .error, "Error sending message with WebSocket \(error.localizedDescription)")
+        }
+    }
+    
+    /// Sends a WebSocket message for updating an order session.
+    /// - Parameter updatedSession: The updated variant of the order session.
+    func updateOrderSession(_ updatedSession: OrderSession) async {
+        guard let index = mapOrderSessionIdToIndex[updatedSession.id] else {
+            return
+        }
+        
+        let oldSession = orderSessions[index]
+        
+        do {
+            try await orderWebSocketService.send(
+                .updateOrderSession(
+                    .init(
+                        id: updatedSession.id,
+                        status: oldSession.status == updatedSession.status ? nil : updatedSession.status,
+                        tableNumber: oldSession.tableNumber == updatedSession.tableNumber ? nil : updatedSession.tableNumber
+                    )
+                )
+            )
         } catch {
             LoggerConfig.shared.logNetwork(level: .error, "Error sending message with WebSocket \(error.localizedDescription)")
         }

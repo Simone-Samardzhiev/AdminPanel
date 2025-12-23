@@ -12,7 +12,7 @@ import Foundation
 /// Represents an order session.
 struct OrderSession: Decodable, Identifiable {
     /// Order session statuses.
-    enum Status: String, Decodable {
+    enum Status: String, Codable, CaseIterable {
         case open = "open"
         case closed = "closed"
         case paid = "paid"

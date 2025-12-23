@@ -15,11 +15,12 @@ enum WebSocketEvent: Decodable {
     /// Delete event represents a deleted ordered product.
     case delete(Delete)
     
-    /// Update order session event represents update of order session.
-    case updateOrderSession(OrderSessionUpdate)
     
     /// Update ordered products status event represents an update of ordered product status.
     case updateOrderProductStatus(UpdateOrderedProductStatus)
+    
+    /// Update order session event represents update of order session.
+    case updateOrderSession(OrderSessionUpdate)
     
     /// Paid session event represent session has been paid.
     case sessionPaid(SessionPaid)
@@ -104,6 +105,9 @@ enum WebSocketOutgoingMessage: Encodable {
     /// Update message for updating an ordered product status.
     case updateOrderedProductStatus(UpdateOrderedProductStatusPayload)
     
+    /// Update message for updating an order session.
+    case updateOrderSession(UpdateOrderSessionPayload)
+    
     enum CodingKeys: String, CodingKey {
         case type
         case data
@@ -119,6 +123,9 @@ enum WebSocketOutgoingMessage: Encodable {
         case .updateOrderedProductStatus(let payload):
             try container.encode(MessageType.updateOrderedProductStatus, forKey: .type)
             try container.encode(payload, forKey: .data)
+        case .updateOrderSession(let payload):
+            try container.encode(MessageType.updateOrderSession, forKey: .type)
+            try container.encode(payload, forKey: .data)
         }
     }
 }
@@ -128,6 +135,7 @@ extension WebSocketOutgoingMessage {
     private enum MessageType: String, Encodable {
         case delete = "DELETE_ORDERED_PRODUCT"
         case updateOrderedProductStatus = "UPDATE_ORDERED_PRODUCT_STATUS"
+        case updateOrderSession = "UPDATE_SESSION"
     }
     
     /// Payload for deleting an ordered product.
@@ -139,5 +147,12 @@ extension WebSocketOutgoingMessage {
     struct UpdateOrderedProductStatusPayload: Encodable {
         let id: UUID
         let status: OrderedProduct.Status
+    }
+    
+    /// Payload for updating an order session.
+    struct UpdateOrderSessionPayload: Encodable {
+        let id: UUID
+        let status: OrderSession.Status?
+        let tableNumber: Int?
     }
 }
